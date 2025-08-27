@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Percentages Quiz</title>
+    <!-- Library for converting HTML to an image -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        /* --- Basic Setup & Colors --- */
+        :root {
+            --primary-bg: #f0f2f5;
+            --container-bg: #ffffff;
+            --accent-color: #4299e1; /* Blue */
+            --correct-color: #48bb78; /* Green for answered */
+            --incorrect-color: #e53e3e; /* Red for skipped */
+            --unseen-color: #f6ad55; /* Orange for unseen */
+            --text-color: #2d3748;
+            --light-gray: #e2e8f0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+        }
+        /* --- Watermark --- */
+        body::before {
+            content: 'SMART CLASSES';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            font-size: 8vw;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.1);
+            pointer-events: none;
+            z-index: 0;
+        }
+        /* --- Main Quiz Container --- */
+        .quiz-container {
+            background-color: var(--container-bg);
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            overflow: hidden;
+            z-index: 1;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        /* --- Question Navigation --- */
+        .question-nav {
+            display: flex;
+            justify-content: center;
+            padding: 15px 15px 10px 15px; /* Adjusted padding */
+            background-color: var(--primary-bg);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .nav-block {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: white;
+            background-color: var(--unseen-color);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        /* --- Brand Title (NEW) --- */
+        .brand-title {
+            text-align: center;
+            padding: 10px 0;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--text-color);
+            background-color: var(--primary-bg);
+            border-bottom: 1px solid var(--light-gray);
+        }
+        .nav-block:hover { transform: scale(1.1); }
+        .nav-block.visited { background-color: var(--incorrect-color); }
+        .nav-block.answered { background-color: var(--correct-color); }
+        .nav-block.current {
+            border: 3px solid #2d3748;
+            transform: scale(1.2);
+        }
+        /* --- Quiz Area --- */
+        .quiz-area { padding: 30px; }
+        .stopwatch-container {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+        #question-text {
+            font-size: 1.4rem;
+            font-weight: normal;
+            margin-bottom: 25px;
+            line-height: 1.4;
+        }
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .option-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            font-size: 1rem;
+            text-align: left;
+            background-color: var(--primary-bg);
+            border: 2px solid var(--light-gray);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        .option-btn:hover { border-color: var(--accent-color); }
+        .option-btn.selected {
+            background-color: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+        /* --- Navigation & Submission --- */
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--light-gray);
+        }
+        .nav-btn {
+            padding: 12px 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #prev-btn { background-color: #718096; }
+        #prev-btn:hover { background-color: #4a5568; }
+        #next-btn { background-color: var(--accent-color); }
+        #next-btn:hover { background-color: #2b6cb0; }
+        #next-btn.submit { background-color: var(--correct-color); }
+        #next-btn.submit:hover { background-color: #38a169; }
+        
+        /* --- Results Screen --- */
+        .results-container {
+            display: none;
+            padding: 40px;
+            text-align: center;
+            max-height: 85vh; 
+            overflow-y: auto; 
+        }
+        .results-container h2 {
+            font-size: 2.5rem;
+            color: var(--accent-color);
+            margin-bottom: 20px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background-color: var(--primary-bg);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .stat-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 1rem;
+            color: #718096;
+            text-transform: uppercase;
+        }
+        .stat-card p {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        #share-btn {
+            background-color: var(--accent-color);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            border: none;
+            margin-top: 20px;
+        }
+        .review-container {
+            margin-top: 40px;
+            text-align: left;
+        }
+        .review-container h3 {
+            font-size: 1.5rem;
+            color: var(--text-color);
+            border-bottom: 2px solid var(--light-gray);
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .review-item {
+            background: #fff5f5;
+            border: 1px solid #fed7d7;
+            border-left: 5px solid var(--incorrect-color);
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 8px;
+        }
+        .review-item.unanswered {
+             background: #fffeed;
+             border-color: #fef08a;
+             border-left-color: #f6ad55;
+        }
+        .review-item p { margin: 5px 0; }
+        .review-item span.correct {
+            color: var(--correct-color);
+            font-weight: bold;
+        }
+         .review-item span.incorrect {
+            color: var(--incorrect-color);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="quiz-container">
+        <div class="question-nav" id="question-nav"></div>
+        <!-- Title Added Here -->
+        <div class="brand-title">SMART CLASSES</div>
+        <div class="quiz-area" id="quiz-area">
+            <div class="stopwatch-container">
+                <span id="stopwatch">00:00</span>
+            </div>
+            <h2 id="question-text">Loading question...</h2>
+            <div class="options-container" id="options-container"></div>
+            <div class="navigation">
+                <button id="prev-btn" class="nav-btn">Previous</button>
+                <button id="next-btn" class="nav-btn">Next</button>
+            </div>
+        </div>
+        <div class="results-container" id="results-container">
+            <div id="results-content">
+                <h2>Quiz Completed!</h2>
+                <p>Here is your performance analysis.</p>
+                <div class="stats-grid" id="stats-grid"></div>
+                <div class="review-container" id="review-list"></div>
+            </div>
+            <button id="share-btn">Download Results</button>
+        </div>
+    </div>
+    <script>
+        const quizData = [
+            { question: "If 120 is 20% of a number, then 120% of that number will be:", options: ["20", "120", "480", "720"], answer: "720" },
+            { question: "If P% of P is 36, then P is equal to:", options: ["3600", "600", "60", "15"], answer: "60" },
+            { question: "2 is what percent of 50?", options: ["2%", "2.5%", "4%", "5%"], answer: "4%" },
+            { question: "The ratio 5:4 expressed as a percent equals:", options: ["125%", "80%", "40%", "12.5%"], answer: "125%" },
+            { question: "30% of x is 72. Then the value of x is:", options: ["216", "240", "480", "640"], answer: "240" },
+            { question: "What is 20% of 25% of 300?", options: ["150", "60", "45", "15"], answer: "15" },
+            { question: "If 20% of A = 50% of B, then what percent of A is B?", options: ["30%", "40%", "25%", "15%"], answer: "40%" },
+            { question: "P is six times as large as Q. The percent that Q is less than P is:", options: ["250/3 %", "70%", "190/3 %", "50%"], answer: "250/3 %" },
+            { question: "65g is what per cent of 2 kg?", options: ["13/4 %", "65/2 %", "15/8 %", "13/8 %"], answer: "13/4 %" },
+            { question: "If 60% Of A = 3/4 of B, then A:B is:", options: ["9:20", "20:9", "4:5", "5:4"], answer: "5:4" },
+            { question: "One-third of 1206 is what per cent of 134?", options: ["100%", "150%", "200%", "300%"], answer: "300%" },
+            { question: "If 125% of x is 100, then x is:", options: ["80", "180", "400", "125"], answer: "80" },
+            { question: "25% of 120 + 40% of 380 = ? of 637", options: ["2/7", "1/7", "4/7", "3/7"], answer: "2/7" },
+            { question: "1% of 1% of 25% of 1000 is:", options: ["0.025", "0.0025", "0.25", "0.000025"], answer: "0.025" },
+            { question: "If 60% of A = 30% of B, B = 40% of C and C = x% of A, then the value of x is:", options: ["800", "200", "300", "500"], answer: "500" },
+            { question: "If 20% of A = 30% of B = 1/6 of C, then A:B:C is:", options: ["2:3:16", "3:2:16", "10:15:18", "15:10:18"], answer: "15:10:18" },
+            { question: "If 80% of a number added to 80 gives the result as the number itself, then the number is:", options: ["200", "300", "400", "500"], answer: "400" },
+            { question: "The income of C is 20% more than B's and the income of B is 25% more than A's. Find by how much percent is C's income more than A's?", options: ["150%", "50%", "25%", "35%"], answer: "50%" },
+            { question: "If A exceeds B by 40%, B is less than C by 20%, then A:C is:", options: ["28:25", "26:25", "14:27", "27:14"], answer: "28:25" },
+            { question: "In a school 70% of the students are girls and the number of boys is 510. Then the total number of students in the school is:", options: ["850", "1700", "1830", "1900"], answer: "1700" }
+        ];
+        
+        const questionNavContainer = document.getElementById('question-nav');
+        const questionTextEl = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const stopwatchEl = document.getElementById('stopwatch');
+        const quizArea = document.getElementById('quiz-area');
+        const resultsContainer = document.getElementById('results-container');
+        const shareBtn = document.getElementById('share-btn');
+        
+        let currentQuestionIndex = 0;
+        let userAnswers = new Array(quizData.length).fill(null);
+        let visitedQuestions = new Array(quizData.length).fill(false);
+        let stopwatchInterval;
+        let totalSeconds = 0;
+
+        function startQuiz() {
+            createNavBlocks();
+            loadQuestion();
+            startStopwatch();
+        }
+
+        function createNavBlocks() {
+            quizData.forEach((_, index) => {
+                const block = document.createElement('div');
+                block.classList.add('nav-block');
+                block.textContent = index + 1;
+                block.id = `nav-block-${index}`;
+                block.addEventListener('click', () => goToQuestion(index));
+                questionNavContainer.appendChild(block);
+            });
+        }
+        
+        function goToQuestion(index) {
+            currentQuestionIndex = index;
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            visitedQuestions[currentQuestionIndex] = true;
+            const currentQuestion = quizData[currentQuestionIndex];
+            questionTextEl.innerHTML = `Q${currentQuestionIndex + 1}: ${currentQuestion.question}`;
+            optionsContainer.innerHTML = '';
+            
+            currentQuestion.options.forEach(option => {
+                const button = document.createElement('button');
+                button.classList.add('option-btn');
+                button.textContent = option;
+                if (userAnswers[currentQuestionIndex] === option) {
+                    button.classList.add('selected');
+                }
+                button.addEventListener('click', () => selectOption(button, option));
+                optionsContainer.appendChild(button);
+            });
+            updateNavHighlight();
+            updateNavigationButtons();
+        }
+        
+        function selectOption(button, selectedOption) {
+            userAnswers[currentQuestionIndex] = selectedOption;
+            const navBlock = document.getElementById(`nav-block-${currentQuestionIndex}`);
+            if (navBlock) {
+                navBlock.classList.add('answered');
+                navBlock.classList.remove('visited');
+            }
+            document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
+            button.classList.add('selected');
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+        
+        function startStopwatch() {
+            stopwatchInterval = setInterval(() => {
+                totalSeconds++;
+                stopwatchEl.textContent = formatTime(totalSeconds);
+            }, 1000);
+        }
+
+        function stopStopwatch() {
+            clearInterval(stopwatchInterval);
+        }
+
+        function updateNavHighlight() {
+            document.querySelectorAll('.nav-block').forEach((block, index) => {
+                block.classList.remove('current');
+                if (userAnswers[index] !== null) {
+                    block.classList.add('answered');
+                    block.classList.remove('visited');
+                } else if (visitedQuestions[index]) {
+                    block.classList.add('visited');
+                }
+            });
+            const currentBlock = document.getElementById(`nav-block-${currentQuestionIndex}`);
+            if (currentBlock) currentBlock.classList.add('current');
+        }
+        
+        function updateNavigationButtons() {
+            prevBtn.style.display = currentQuestionIndex === 0 ? 'none' : 'inline-block';
+            if (currentQuestionIndex === quizData.length - 1) {
+                nextBtn.textContent = 'Submit';
+                nextBtn.classList.add('submit');
+            } else {
+                nextBtn.textContent = 'Next';
+                nextBtn.classList.remove('submit');
+            }
+        }
+        
+        function handleNextQuestion() {
+            if (currentQuestionIndex < quizData.length - 1) {
+                currentQuestionIndex++;
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+        
+        function handlePreviousQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                loadQuestion();
+            }
+        }
+
+        function showResults() {
+            stopStopwatch();
+            quizArea.style.display = 'none';
+            resultsContainer.style.display = 'block';
+
+            let attemptedCount = 0;
+            let correctCount = 0;
+            let wrongCount = 0;
+            const reviewList = [];
+
+            quizData.forEach((question, index) => {
+                const userAnswer = userAnswers[index];
+                if (userAnswer !== null) {
+                    attemptedCount++;
+                    if (userAnswer === question.answer) {
+                        correctCount++;
+                    } else {
+                        wrongCount++;
+                        reviewList.push({ question: `Q${index + 1}: ${question.question}`, userAnswer, correctAnswer: question.answer, status: 'wrong' });
+                    }
+                } else {
+                    reviewList.push({ question: `Q${index + 1}: ${question.question}`, userAnswer: "Unanswered", correctAnswer: question.answer, status: 'unanswered' });
+                }
+            });
+
+            const accuracy = attemptedCount > 0 ? (correctCount / attemptedCount) * 100 : 0;
+            const statsGrid = document.getElementById('stats-grid');
+            statsGrid.innerHTML = `
+                <div class="stat-card"><h3>Total Time</h3><p>${formatTime(totalSeconds)}</p></div>
+                <div class="stat-card"><h3>Accuracy</h3><p>${accuracy.toFixed(1)}%</p></div>
+                <div class="stat-card"><h3>Attempted</h3><p>${attemptedCount}</p></div>
+                <div class="stat-card"><h3>Correct</h3><p>${correctCount}</p></div>
+                <div class="stat-card"><h3>Wrong</h3><p>${wrongCount}</p></div>
+            `;
+            
+            displayReviewSection(reviewList);
+        }
+        
+        function displayReviewSection(reviewItems) {
+            const container = document.getElementById('review-list');
+            const incorrectOrUnanswered = reviewItems.filter(item => item.status === 'wrong' || item.status === 'unanswered');
+
+            if (incorrectOrUnanswered.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+            
+            container.style.display = 'block';
+            let html = '<h3>Review Answers</h3>';
+            incorrectOrUnanswered.forEach(item => {
+                const itemClass = item.status === 'wrong' ? 'review-item' : 'review-item unanswered';
+                const yourAnswerText = item.status === 'unanswered' 
+                    ? `Your Answer: <span class="incorrect">Unanswered</span>`
+                    : `Your Answer: <span class="incorrect">${item.userAnswer}</span>`;
+
+                html += `
+                    <div class="${itemClass}">
+                        <p>${item.question}</p>
+                        <p>${yourAnswerText}</p>
+                        <p>Correct Answer: <span class="correct">${item.correctAnswer}</span></p>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        nextBtn.addEventListener('click', handleNextQuestion);
+        prevBtn.addEventListener('click', handlePreviousQuestion);
+        shareBtn.addEventListener('click', () => {
+            const resultsContent = document.getElementById('results-content');
+            resultsContent.style.backgroundColor = 'white';
+            
+            html2canvas(resultsContent, { scrollY: -window.scrollY }).then(canvas => {
+                resultsContent.style.backgroundColor = '';
+                const link = document.createElement('a');
+                link.download = 'quiz-results.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        });
+        
+        document.addEventListener('DOMContentLoaded', startQuiz);
+    </script>
+</body>
+</html>
