@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMART CLASSES - Online Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        body { font-family: 'Roboto', sans-serif; }
+        body {
+            -webkit-user-select: none; /* Safari */
+            -ms-user-select: none; /* IE 10 and IE 11 */
+            user-select: none; /* Standard syntax */
+        }
+        /* Style for context block in questions */
+        .question-context {
+            background-color: #f3f4f6;
+            border-left: 4px solid #3b82f6;
+            padding: 12px;
+            margin-bottom: 16px;
+            font-style: normal; /* UPDATED: Font style is now normal */
+            color: #4b5563;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col h-screen text-gray-800">
+
+    <div id="login-page" class="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-blue-500 to-blue-700 p-4">
+        <div class="w-full max-w-md bg-white p-8 rounded-2xl shadow-2xl">
+            <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">SMART CLASSES</h1>
+            <p class="text-center text-gray-500 mb-8">Online Test Portal</p>
+            <form id="login-form">
+                <div class="mb-4">
+                    <label for="user-id" class="block text-sm font-medium text-gray-700 mb-1">User ID</label>
+                    <input type="text" id="user-id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" required>
+                </div>
+                <div class="mb-6">
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" required>
+                </div>
+                <p id="login-error" class="text-red-500 text-sm text-center mb-4 hidden">Invalid User ID or Password.</p>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="instructions-page" class="hidden flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+        <div class="w-full max-w-4xl bg-white p-8 rounded-lg shadow-lg">
+            <h1 class="text-2xl font-bold text-center mb-6">Instructions</h1>
+            <div class="text-sm text-gray-700 space-y-4 max-h-[70vh] overflow-y-auto pr-4">
+                <ol class="list-decimal list-inside space-y-3">
+                    <li>Total duration of examination is <strong id="total-duration-display">30 minutes</strong>.</li>
+                    <li>The clock will be set at the server. The countdown timer in the top right corner of screen will display the remaining time available for you to complete the examination. When the timer reaches zero, the examination will end by itself. You will not be required to end or submit your examination.</li>
+                    <li>Test contains the following sections:
+                        <table class="w-full my-2 border text-left">
+                            <thead><tr class="bg-gray-100"><th class="p-2 border">SL. No.</th><th class="p-2 border">Name of the Test</th><th class="p-2 border">No. of Questions</th><th class="p-2 border">Marks</th></tr></thead>
+                            <tbody><tr><td class="p-2 border">1</td><td class="p-2 border" id="instruction-test-name">Reasoning Ability Mock Test</td><td class="p-2 border" id="instruction-question-count">35</td><td class="p-2 border" id="instruction-marks">35</td></tr></tbody>
+                        </table>
+                    </li>
+                    <li>Test contains Total <span id="instruction-total-questions">35</span> questions. Each correct answer you will be given <strong>+ve 1 marks</strong> and for each wrong answer you may get <strong> -ve 0.25 marks</strong>, based on Exam Pattern.</li>
+                    <li>You can use a rough sheet while taking the test.</li>
+                    <li>Do not click the button “Submit” before answering all the questions. A test once submitted cannot be resumed.</li>
+                    <li>The Question Palette displayed on the right side of the screen will show the status of each question using one of the following symbols:
+                        <ul class="list-disc list-inside ml-4 mt-2 space-y-1">
+                            <li><span class="inline-block w-4 h-4 rounded-full bg-gray-300 mr-2 align-middle"></span> You have not visited the question yet.</li>
+                            <li><span class="inline-block w-4 h-4 rounded-full bg-red-500 mr-2 align-middle"></span> You have not answered the question.</li>
+                            <li><span class="inline-block w-4 h-4 rounded-full bg-green-500 mr-2 align-middle"></span> You have answered the question.</li>
+                            <li><span class="inline-block w-4 h-4 rounded-full bg-purple-500 mr-2 align-middle"></span> You have NOT answered the question but have marked it for review.</li>
+                            <li><span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-purple-500 mr-2 align-middle relative"><i class="fas fa-check-circle text-green-300 text-xs absolute -top-1 -right-1"></i></span> The question(s) "Answered and Marked for Review" will be considered for evaluation.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Procedure for answering a multiple-choice type question:</strong>
+                        <ul class="list-disc list-inside ml-4 mt-2 space-y-1">
+                            <li>To select your answer, click on the button of one of the options.</li>
+                            <li>To deselect your chosen answer, click on the <strong>Clear Response</strong> button.</li>
+                            <li>To change your chosen answer, click on the button of another option.</li>
+                            <li>To save your answer, you MUST click on the <strong>Save & Next</strong> button.</li>
+                            <li>To mark the question for review, click on the <strong>Mark for Review & Next</strong> button. If an answer is selected for a question that is Marked for Review, that answer will be considered in the evaluation.</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+            <div class="mt-8 text-center">
+                <button id="start-test-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-transform transform hover:scale-105">Start Test</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="quiz-wrapper" class="hidden flex flex-col h-full">
+        <header class="bg-[#1E88E5] text-white shadow-md z-20 flex-shrink-0">
+            <div class="container mx-auto px-4 py-2">
+                <div class="md:hidden">
+                    <div class="flex justify-between items-center mb-2">
+                        <h1 id="quiz-title-mobile" class="text-lg font-bold">SMART CLASSES</h1>
+                        <div class="flex items-center gap-2">
+                            <span>Time Left:</span>
+                            <span id="timer-mobile" class="font-bold bg-blue-900/50 px-2 py-1 rounded-md">30:00</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-start">
+                        <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-1 bg-blue-800/50 p-1 rounded-lg">
+                                <button id="font-decrease-btn-mobile" title="Decrease font size" class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-blue-600">A-</button>
+                                <button id="font-increase-btn-mobile" title="Increase font size" class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-blue-600">A+</button>
+                            </div>
+                            <button id="pause-btn-mobile" title="Pause" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-blue-600"><i class="fas fa-pause"></i></button>
+                            <button id="fullscreen-btn-mobile" title="Toggle Fullscreen" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-blue-600">
+                                <i id="fullscreen-icon-mobile" class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hidden md:flex justify-between items-center">
+                    <h1 id="quiz-title" class="text-lg font-bold">SMART CLASSES - Reasoning Ability Mock Test</h1>
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2">
+                            <span>Time Left:</span>
+                            <span id="timer" class="font-bold bg-blue-900/50 px-2 py-1 rounded-md">30:00</span>
+                        </div>
+                        <div class="flex items-center gap-1 bg-blue-800/50 p-1 rounded-lg">
+                            <button id="font-decrease-btn" title="Decrease font size" class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-blue-600">A-</button>
+                            <button id="font-increase-btn" title="Increase font size" class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-blue-600">A+</button>
+                        </div>
+                        <button id="pause-btn" title="Pause" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-blue-600"><i class="fas fa-pause"></i></button>
+                        <button id="fullscreen-btn" title="Toggle Fullscreen" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-blue-600"><i id="fullscreen-icon" class="fas fa-expand"></i></button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-grow container mx-auto p-4 flex flex-col lg:flex-row gap-4 overflow-y-auto min-h-0">
+            <div class="w-full lg:w-2/3 flex flex-col gap-4">
+                <div class="bg-white p-6 rounded-lg shadow-sm">
+                    <div class="border-b pb-4 mb-4 flex justify-between items-center">
+                        <h2 class="text-lg font-semibold">Question No. <span id="current-question-display">1</span></h2>
+                    </div>
+                    <div class="pr-2">
+                        <div id="question-text" class="text-lg leading-relaxed"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-sm">
+                     <div id="options-container" class="space-y-4"></div>
+                </div>
+            </div>
+            
+            <aside id="question-palette-container" class="w-full lg:w-1/3 bg-white p-6 rounded-lg shadow-sm">
+                <h2 class="text-xl font-bold mb-4">Question Palette</h2>
+                <div id="legend-container" class="grid grid-cols-2 gap-x-4 gap-y-2 mb-4 text-sm">
+                    <div><span class="inline-block w-4 h-4 rounded-full bg-green-500 mr-2"></span><span id="answered-count">0</span> Answered</div>
+                    <div><span class="inline-block w-4 h-4 rounded-full bg-red-500 mr-2"></span><span id="not-answered-count">1</span> Not Answered</div>
+                    <div><span class="inline-block w-4 h-4 rounded-full bg-gray-300 mr-2"></span><span id="not-visited-count">34</span> Not Visited</div>
+                    <div class="col-span-2"><span class="inline-block w-4 h-4 rounded-full bg-purple-500 mr-2"></span><span id="marked-review-count">0</span> Marked for Review</div>
+                    <div class="col-span-2"><span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-purple-500 mr-2 align-middle relative"><i class="fas fa-check-circle text-green-300 text-xs absolute -top-1 -right-1"></i></span><span id="answered-marked-count">0</span> Answered & Marked</div>
+                </div>
+                <div id="question-palette" class="grid grid-cols-5 sm:grid-cols-6 lg:grid-cols-5 gap-2"></div>
+            </aside>
+        </main>
+
+        <footer id="quiz-footer" class="bg-white shadow-[0_-2px_5px_rgba(0,0,0,0.1)] z-20 flex-shrink-0">
+            <div class="container mx-auto px-4 py-3 flex flex-wrap justify-center sm:justify-between items-center gap-2">
+                <div class="flex gap-2">
+                    <button id="mark-review-next-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded">Mark for Review & Next</button>
+                    <button id="clear-response-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">Clear Response</button>
+                </div>
+                <button id="save-next-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded w-full sm:w-auto mt-2 sm:mt-0">Save & Next</button>
+            </div>
+        </footer>
+    </div>
+    
+    <div id="pause-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex-col items-center justify-center text-white z-50">
+        <i class="fas fa-pause-circle text-6xl mb-4"></i><h2 class="text-4xl font-bold mb-8">Test Paused</h2>
+        <button id="resume-btn" class="bg-blue-600 hover:bg-blue-700 font-bold py-3 px-8 rounded-lg text-xl">Resume</button>
+    </div>
+
+    <div id="submit-confirm-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 items-center justify-center p-4 z-[102]">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Submit Test?</h2>
+            <p class="text-gray-600 mb-8">Are you sure you want to submit the test? This action cannot be undone.</p>
+            <div class="flex justify-center gap-4">
+                <button id="submit-confirm-no-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">No</button>
+                <button id="submit-confirm-yes-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg">Yes, Submit</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="post-quiz-elements">
+        <div id="post-submit-screen" class="hidden fixed inset-0 bg-gray-100 flex items-center justify-center p-4 z-[100]">
+            <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Test Saved Successfully!</h2>
+                <p class="text-gray-600 mb-8">What would you like to do next?</p>
+                <div class="flex flex-col gap-4">
+                    <button id="view-results-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg">View Results</button>
+                    <button id="review-answers-btn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-6 rounded-lg">Review Answers</button>
+                    <button id="exit-test-btn" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg">Exit Test</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="results-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[101]">
+            <div id="results-content-wrapper" class="bg-gradient-to-br from-gray-50 to-blue-50 p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-lg border-t-4 border-blue-500 flex flex-col">
+                <div id="results-content">
+                    <h2 class="text-3xl font-bold text-gray-800 text-center mb-2">Test Results</h2>
+                    <p class="text-center text-gray-500 mb-6" id="test-date-time"></p>
+                    <div class="space-y-4 text-base sm:text-lg">
+                        <div class="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm"><span class="font-bold text-gray-700">Final Score:</span><span class="font-bold text-blue-700 text-xl" id="final-score">0</span></div>
+                        <div class="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm"><span class="font-semibold text-gray-700">Questions Answered:</span><span class="font-bold text-blue-600" id="answered-questions">0</span></div>
+                        <div class="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm"><span class="font-semibold text-gray-700">Correct Answers:</span><span class="font-bold text-green-600" id="correct-answers">0</span></div>
+                        <div class="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm"><span class="font-semibold text-gray-700">Wrong Answers:</span><span class="font-bold text-red-600" id="wrong-answers">0</span></div>
+                        <div class="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm"><span class="font-semibold text-gray-700">Accuracy:</span><span class="font-bold text-blue-700" id="accuracy">0%</span></div>
+                    </div>
+                </div>
+                <div class="mt-8 flex justify-between items-center">
+                    <button id="back-to-options-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Back</button>
+                    <button id="save-results-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg flex items-center gap-2"><i class="fas fa-download"></i> Download as PNG</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="review-page" class="hidden fixed inset-0 bg-gray-100 flex flex-col z-[100]">
+            <header class="bg-white shadow-md w-full flex-shrink-0">
+                <div class="container mx-auto p-4 flex justify-between items-center">
+                    <h1 class="text-xl font-bold">Review Answers</h1>
+                    <button id="exit-review-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">Exit Review</button>
+                </div>
+            </header>
+            <main id="review-container" class="flex-grow container mx-auto p-4 overflow-y-auto min-h-0">
+            </main>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) || (e.ctrlKey && ['U', 'S', 'C', 'X'].includes(e.key.toUpperCase()))) {
+                e.preventDefault();
+            }
+        });
+
+        const questionContexts = {
+            'group1-5': "<strong>Directions Q([RANGE]):</strong> Study the following information carefully and answer the below questions.<br>Eight persons – P, Q, R, S, T, U, V, and W are sitting on a square table in such a way that one person sits on each corner and facing away from the center whereas one person sits in the middle of each side of the table and facing towards the center but not necessarily in the same order.<br>P sits third to the left of Q. S neither sits adjacent to P nor Q. S sits immediate right of W, who sits facing R. Two persons are sitting between V and T, who sits on the corner. T and W are not sitting together. P and U are facing the same direction.",
+            'group6-10': "<strong>Directions Q([RANGE]):</strong> Study the following information carefully and answer the questions given below.<br>Eight persons viz. I, J, K, L, M, N, O and P are buying a product one after another, but not necessarily in the same order. Only one person buys the product at a time. Only one person buys between O and K, who buys adjacent to N. N buys two persons before I, who doesn’t buy before O. Only three persons buy between I and M, who doesn’t buy at the last. L buys two persons before M but is not the first person to buy. More than three persons buy between J and P, who doesn’t buy before L.",
+            'group11-15': "<strong>Directions Q([RANGE]):</strong> Study the following information carefully and answer the below questions.<br>Eight boxes –R, S, T, U, V, W, X, and Y are arranged in four different shelves in two stacks- Stack1 and Stack2 from West to East. The lowermost shelf is numbered as one and the topmost shelf is numbered as four. All the information is not necessarily in the same order. Box V is kept in even number shelf. Box X is kept the southeast stack of Box V. Box X is kept in odd number shelf. Only one shelf between Box X and Box W, both kept at the same stack. The number of shelves below box W is the same as the number of shelves above box S. Box S is kept southeast of Box R which does not keep at the topmost shelf. Box U is kept the north-east stack of box R. Box Y is kept above box T, none of the boxes kept adjacent shelf.",
+            'group16-20': "<strong>Directions Q([RANGE]):</strong> Study the following information carefully and answer the below questions.<br>Six persons- C, D, E, F, G, and H are sitting in the linear row facing the north. They all are having a different number of chocolates. All the information is not necessarily in the same order. The one who has 28 chocolates sits third to the right of C, either of them sits end of the row. Only one person sits between C and H. D sits immediate right of H. The number of persons who sits to the left of C is the same as the number of persons who sits to the right of F. G who has 10 chocolates sits third to the right of E. E has five chocolate more than G. F has five chocolates more than D and two chocolates less than H. The difference between the chocolates of E and C is the same as the difference between the chocolates of C and H.",
+            'group22-24': "<strong>Directions Q([RANGE]):</strong> Study the following information carefully and answer the questions given below.<br><strong class='font-mono tracking-widest'>CAR SUN WAR RAY FLY TAN</strong>",
+            'group25-26': "<strong>Directions Q([RANGE]):</strong> Study the following details carefully and answer the questions given below.<br>Dheeraj goes 10m east and reaches at point N. Now he takes his right and goes 5m and reaches at point O. Again, he takes his right 5m and reaches at point V. Now he turns 45° in anti-clockwise direction 8m and reaches at point Z.",
+            'group27-30': "<strong>Directions Q([RANGE]):</strong> In a certain code language,<br>‘Asset Account Expense Equity’ means ‘28 41 63 35’,<br>‘Money Business Revenue Account’ means ‘17 19 35 12’,<br>‘Margin Equity Business Payable’ means ‘60 63 12 34’,<br>‘Expense Liability Payable Profit’ means ‘41 65 24 34’",
+            'group31-33': "<strong>Directions Q([RANGE]):</strong> Study the following information carefully and answer the below questions.<br>Six ropes - F, I, J, L, Q, and R with different lengths. Rope F is longer than R. Length of Rope L is three centimeters more than the Rope F. Rope I is longer than only J. Rope L is not the longest rope. The third shortest length of rope is 22cm. Length of Rope F is 5cm more than Rope R. The difference between the length of L and R is the same as the difference between the length of R and J.",
+            'group34-35': "<strong>Directions Q([RANGE]):</strong> Study the following statements and then decide which of the given conclusions logically follows from the given statements disregarding commonly known facts."
+        };
+
+        const rawQuestionData = [
+            { blockId: 'group1-5', id: 1, question: "What is the position of P with respect to V?", options: ["Second to the left", "Immediate right", "Third to the left", "Fourth to the right", "None of these"], answer: "D" },
+            { blockId: 'group1-5', id: 2, question: "Who among the following person sits third to the right of W?", options: ["U", "The one who sits second to the right of R", "T", "The one who sits immediate right of V", "None of these"], answer: "B" },
+            { blockId: 'group1-5', id: 3, question: "If R is related to T, similarly W is related to S, then who among the following person is related to U?", options: ["V", "S", "Q", "P", "None of these"], answer: "C" },
+            { blockId: 'group1-5', id: 4, question: "If all the persons are arranged in alphabetical order in a clockwise direction from P, then the position of how many persons remains unchanged except P?", options: ["Two", "None", "Three", "One", "More than three"], answer: "B" },
+            { blockId: 'group1-5', id: 5, question: "Which of the following statement is/are not true?", options: ["Two persons are sitting between W and T when counted to the left of W.", "P sits third to the left of Q", "S sits immediate left of W", "U sits second to the left of T", "None of the statements is true"], answer: "C" },
+            { blockId: 'group6-10', id: 6, question: "Who among the following person buys the product at first?", options: ["The one who buys two persons before O", "P", "The one who buys four persons before L", "M", "None of these"], answer: "A" },
+            { blockId: 'group6-10', id: 7, question: "If all the persons buy the product in alphabetical order from first, then how many persons remain unchanged in their position?", options: ["One", "Two", "Three", "More than three", "None"], answer: "E" },
+            { blockId: 'group6-10', id: 8, question: "How many persons buy between L and K?", options: ["One", "As many persons between I and M", "More than three", "As many persons between N and O", "None"], answer: "C" },
+            { blockId: 'group6-10', id: 9, question: "What is the position of P with respect to N?", options: ["Three persons before", "Immediately after", "Two persons after", "Five persons before", "None of these"], answer: "B" },
+            { blockId: 'group6-10', id: 10, question: "The number of persons buying the product before M is the same as after ___.", options: ["N", "P", "K", "I", "None of these"], answer: "D" },
+            { blockId: 'group11-15', id: 11, question: "Which of the following box kept on shelf 2?", options: ["Box U", "Box Y", "Box X", "Box S", "The box which is kept west of Box W"], answer: "D" },
+            { blockId: 'group11-15', id: 12, question: "Four of the following are alike in a certain way. Which of the following ones does not belong to the group?", options: ["The box which is kept east of box Y", "The box which is kept west of box S", "Box V", "Box R", "Box Y"], answer: "C" },
+            { blockId: 'group11-15', id: 13, question: "Which of the following statement is/are true?", options: ["Only I and III", "Only III and IV", "Only I and IV", "Only II and IV", "None of these"], answer: "E" },
+            { blockId: 'group11-15', id: 14, question: "On which of the following shelf and stack Box T is kept?", options: ["Stack2, Shelf2", "Stack1, Shelf2", "Stack1, Shelf3", "Stack1, Shelf1", "Stack2, Shelf3"], answer: "D" },
+            { blockId: 'group11-15', id: 15, question: "What is the direction of Box T with respect to box Y?", options: ["North-east", "North", "South", "South-west", "South-east"], answer: "C" },
+            { blockId: 'group16-20', id: 16, question: "Who among the following person sits exactly between E and D?", options: ["C", "The one who sits second to the right of G", "The one who has 25 chocolates", "The one who has 35 chocolates", "No one"], answer: "A" },
+            { blockId: 'group16-20', id: 17, question: "Who among the following person has an odd number of chocolates?", options: ["Only (I) and (II)", "Only (I) and (IV)", "Only (I) and (III)", "Only (II) and (IV)", "All (I), (II), (III) and (IV)"], answer: "E" },
+            { blockId: 'group16-20', id: 18, question: "How many persons are sitting between C and the one who has second highest number of chocolates?", options: ["Three", "Four", "Two", "As many persons between E and D", "None"], answer: "C" },
+            { blockId: 'group16-20', id: 19, question: "What is the position of G from the extreme right end?", options: ["Fourth", "First", "Second", "Sixth", "Fifth"], answer: "B" },
+            { blockId: 'group16-20', id: 20, question: "Who among the following person has 25 chocolates?", options: ["F", "The one who sits second to the right of D", "The one who sits immediate left of E", "G", "D"], answer: "A" },
+            { blockId: 'q21', id: 21, question: "How many such pairs of letters are there in the word “CARBONIZE” which have as many letters between them as in the English alphabetical series (both forward and backward)?", options: ["One", "Two", "Three", "More than three", "None"], answer: "D" },
+            { blockId: 'group22-24', id: 22, question: "If all the letters are arranged in alphabetical order from left to right within the word, then how many words thus formed are meaningful?", options: ["One", "Two", "Three", "More than three", "None"], answer: "B" },
+            { blockId: 'group22-24', id: 23, question: "If all the words are arranged in dictionary order from right to left, then which of the following word is second from the left?", options: ["SUN", "WAR", "RAY", "TAN", "None of these"], answer: "A" },
+            { blockId: 'group22-24', id: 24, question: "If all the consonants are replaced with its immediate next letter in the English alphabetical series, then how many words thus formed will have more than one vowel letter?", options: ["One", "Two", "Three", "More than three", "None"], answer: "B" },
+            { blockId: 'group25-26', id: 25, question: "What is the shortest distance between point N and point V?", options: ["2√5m", "5√2m", "3√5m", "4√5m", "None of these"], answer: "B" },
+            { blockId: 'group25-26', id: 26, question: "Which of the following points are in a line?", options: ["N, O, V", "O, V, Z", "N, V, Z", "Can’t be determined", "None of these"], answer: "E" },
+            { blockId: 'group27-30', id: 27, question: "What does '35' represent in a code language?", options: ["Revenue", "Account", "Expense", "Equity", "Asset"], answer: "B" },
+            { blockId: 'group27-30', id: 28, question: "What is the code for ‘Asset Margin’ in the given language?", options: ["65 63", "60 41", "28 60", "60 65", "35 34"], answer: "C" },
+            { blockId: 'group27-30', id: 29, question: "If “Liability Expense” represents a code “65 41” then what does “63 24” represent in a code language?", options: ["Payable Asset", "Profit Money", "Equity Profit", "Account Payable", "Asset Profit"], answer: "C" },
+            { blockId: 'group27-30', id: 30, question: "If the sum of the code of “Money Asset” is 45, then what is the sum of the code of “Revenue Expense”?", options: ["47", "54", "82", "Can’t be determined", "None of these"], answer: "D" },
+            { blockId: 'group31-33', id: 31, question: "How many ropes are longer than Q?", options: ["One", "Two", "Three", "Four", "None"], answer: "E" },
+            { blockId: 'group31-33', id: 32, question: "What may be the length of I?", options: ["13", "18", "23", "14", "12"], answer: "B" },
+            { blockId: 'group31-33', id: 33, question: "If the sum of the length of I and L is 48cm, and the difference between the length of I and Q is 17cm, then what is the length of Q?", options: ["37cm", "30cm", "35cm", "38cm", "None of the above"], answer: "C" },
+            { blockId: 'group34-35', id: 34, question: "<strong>Statement:</strong><br>Only a few Alliums is Anemone<br>All Anemone is Aster<br>No Aster is Bellflower<br><strong>Conclusion:</strong><br>I. Some Aster is Allium<br>II. Some Allium can never be Bellflower<br>III. No Anemone is a Bellflower", options: ["Only I and II follows", "Only III and II follows", "Only I and III follow", "All follows", "None follow"], answer: "D" },
+            { blockId: 'group34-35', id: 35, question: "<strong>Statement:</strong><br>Only a few Chia is Hemp<br>No Hemp is Sesame<br>All Sesame is Sunflower<br><strong>Conclusion:</strong><br>I. Some Chia is not a hemp<br>II. All Chia can be Sesame<br>III. Some Hemp is Sunflower", options: ["Only I follow", "Only III and II follow", "Only I and III follow", "Only II follows", "None follow"], answer: "A" }
+        ];
+
+        let questions = [];
+        let currentQuestionIndex = 0;
+        let selectedAnswers = [];
+        let markedForReview = [];
+        let questionsSeen = [];
+        const totalDurationMinutes = 30;
+        const totalTimeInSeconds = totalDurationMinutes * 60;
+        let timer = totalTimeInSeconds;
+        let timerInterval;
+        let baseFontSize = 14;
+        let testResults = {};
+
+        const loginPage = document.getElementById('login-page');
+        const instructionsPage = document.getElementById('instructions-page');
+        const quizWrapper = document.getElementById('quiz-wrapper');
+        const loginForm = document.getElementById('login-form');
+        const startTestBtn = document.getElementById('start-test-btn');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const currentQuestionDisplay = document.getElementById('current-question-display');
+        const timerDisplay = document.getElementById('timer');
+        const timerMobileDisplay = document.getElementById('timer-mobile');
+        const pauseBtn = document.getElementById('pause-btn');
+        const pauseMobileBtn = document.getElementById('pause-btn-mobile');
+        const pauseModal = document.getElementById('pause-modal');
+        const resumeBtn = document.getElementById('resume-btn');
+        const markReviewNextBtn = document.getElementById('mark-review-next-btn');
+        const clearResponseBtn = document.getElementById('clear-response-btn');
+        const saveNextBtn = document.getElementById('save-next-btn');
+        const submitConfirmModal = document.getElementById('submit-confirm-modal');
+        const submitConfirmYesBtn = document.getElementById('submit-confirm-yes-btn');
+        const submitConfirmNoBtn = document.getElementById('submit-confirm-no-btn');
+        const postSubmitScreen = document.getElementById('post-submit-screen');
+        const viewResultsBtn = document.getElementById('view-results-btn');
+        const reviewAnswersBtn = document.getElementById('review-answers-btn');
+        const resultsModal = document.getElementById('results-modal');
+        const saveResultsBtn = document.getElementById('save-results-btn');
+        const backToOptionsBtn = document.getElementById('back-to-options-btn');
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        const fullscreenIcon = document.getElementById('fullscreen-icon');
+        const fullscreenMobileBtn = document.getElementById('fullscreen-btn-mobile');
+        const fullscreenMobileIcon = document.getElementById('fullscreen-icon-mobile');
+        const fontIncreaseBtn = document.getElementById('font-increase-btn');
+        const fontDecreaseBtn = document.getElementById('font-decrease-btn');
+        const fontIncreaseMobileBtn = document.getElementById('font-increase-btn-mobile');
+        const fontDecreaseMobileBtn = document.getElementById('font-decrease-btn-mobile');
+        const reviewPage = document.getElementById('review-page');
+        const exitReviewBtn = document.getElementById('exit-review-btn');
+        const exitTestBtn = document.getElementById('exit-test-btn');
+
+        function updateLegendCounts() {
+            let answered = 0, notAnswered = 0, marked = 0, notVisited = 0, answeredMarked = 0;
+            for (let i = 0; i < questions.length; i++) {
+                const isAnswered = selectedAnswers[i] !== null;
+                const isMarked = markedForReview[i];
+                if (isAnswered && isMarked) { answeredMarked++; }
+                else if (isMarked) { marked++; }
+                if (isAnswered) { answered++; }
+                else if (questionsSeen[i]) { notAnswered++; }
+                else { notVisited++; }
+            }
+            document.getElementById('answered-count').textContent = answered;
+            document.getElementById('not-answered-count').textContent = notAnswered;
+            document.getElementById('marked-review-count').textContent = marked;
+            document.getElementById('not-visited-count').textContent = notVisited;
+            document.getElementById('answered-marked-count').textContent = answeredMarked;
+        }
+
+        function initQuestionPalette() {
+            const questionPalette = document.getElementById('question-palette');
+            questionPalette.innerHTML = '';
+            questions.forEach((q, index) => {
+                const button = document.createElement('button');
+                let stateClasses = '';
+                const isAnswered = selectedAnswers[index] !== null;
+                const isMarked = markedForReview[index];
+                if (isAnswered && isMarked) {
+                    stateClasses = 'bg-purple-500 text-white relative';
+                    button.innerHTML = `${index + 1}<i class="fas fa-check-circle text-green-300 text-xs absolute -bottom-1 -right-1"></i>`;
+                } else if (isMarked) {
+                    stateClasses = 'bg-purple-500 text-white'; button.textContent = index + 1;
+                } else if (isAnswered) {
+                    stateClasses = 'bg-green-500 text-white'; button.textContent = index + 1;
+                } else if (questionsSeen[index]) {
+                    stateClasses = 'bg-red-500 text-white'; button.textContent = index + 1;
+                } else {
+                    stateClasses = 'bg-gray-300 text-gray-800'; button.textContent = index + 1;
+                }
+                button.className = `w-10 h-10 text-sm font-medium rounded transition-all duration-200 ${stateClasses}`;
+                if (index === currentQuestionIndex) button.classList.add('ring-2', 'ring-offset-2', 'ring-blue-500');
+                button.onclick = () => {
+                    goToQuestion(index);
+                };
+                questionPalette.appendChild(button);
+            });
+            updateLegendCounts();
+        }
+
+        function updateQuestion() {
+            const q = questions[currentQuestionIndex];
+            questionText.innerHTML = q.text;
+            currentQuestionDisplay.textContent = currentQuestionIndex + 1;
+            optionsContainer.innerHTML = '';
+            q.options.forEach((option, index) => {
+                const letter = String.fromCharCode(65 + index);
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex items-center p-3 border rounded-lg cursor-pointer transition-colors';
+                const input = document.createElement('input');
+                input.type = 'radio'; input.name = 'options';
+                input.className = 'w-4 h-4 text-blue-600'; input.value = letter;
+                if (selectedAnswers[currentQuestionIndex] === letter) {
+                    input.checked = true; wrapper.classList.add('bg-blue-50', 'border-blue-500');
+                }
+                const label = document.createElement('label');
+                label.innerHTML = option; label.className = 'ml-3 w-full text-md font-medium text-gray-900';
+                wrapper.appendChild(input); wrapper.appendChild(label);
+                wrapper.onclick = () => { input.checked = true; selectedAnswers[currentQuestionIndex] = letter; updateQuestion(); };
+                optionsContainer.appendChild(wrapper);
+            });
+            initQuestionPalette();
+            saveNextBtn.textContent = (currentQuestionIndex === questions.length - 1) ? 'Submit' : 'Save & Next';
+        }
+        
+        function goToQuestion(index) {
+            if (index < 0 || index >= questions.length) return;
+            questionsSeen[index] = true;
+            currentQuestionIndex = index;
+            updateQuestion();
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timer--;
+                const minutes = Math.floor(timer / 60);
+                const seconds = timer % 60;
+                const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                timerDisplay.textContent = timeString;
+                timerMobileDisplay.textContent = timeString;
+                if (timer <= 0) evaluateAndEndTest();
+            }, 1000);
+        }
+
+        function evaluateAndEndTest() {
+            clearInterval(timerInterval);
+            let correct = 0, answered = 0;
+            const wrongQuestions = [], unansweredQuestions = [];
+            questions.forEach((q, index) => {
+                const selected = selectedAnswers[index];
+                if (selected !== null) {
+                    answered++;
+                    if (selected === q.answer) correct++;
+                    else wrongQuestions.push({ question: q, selectedAnswer: selected, correctAnswer: q.answer });
+                } else if (questionsSeen[index]) {
+                    unansweredQuestions.push({ question: q, correctAnswer: q.answer });
+                }
+            });
+            const wrong = answered - correct;
+            const accuracy = answered > 0 ? ((correct / answered) * 100).toFixed(2) : 0;
+            const finalScore = (correct * 1 - wrong * 0.25).toFixed(2);
+            testResults = { correct, answered, wrong, accuracy, finalScore, wrongQuestions, unansweredQuestions };
+            quizWrapper.classList.add('hidden');
+            postSubmitScreen.classList.remove('hidden');
+        }
+        
+        function showResults() {
+            const testDateTime = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'full', timeStyle: 'short' });
+            document.getElementById('final-score').textContent = testResults.finalScore;
+            document.getElementById('answered-questions').textContent = testResults.answered;
+            document.getElementById('correct-answers').textContent = testResults.correct;
+            document.getElementById('wrong-answers').textContent = testResults.wrong;
+            document.getElementById('accuracy').textContent = `${testResults.accuracy}%`;
+            document.getElementById('test-date-time').textContent = `Completed on: ${testDateTime}`;
+            postSubmitScreen.classList.add('hidden');
+            resultsModal.classList.remove('hidden');
+        }
+        
+        function getOptionTextFromLetter(question, letter) {
+            if (!letter) return "N/A";
+            const index = letter.charCodeAt(0) - 65;
+            return question.options[index];
+        }
+
+        function populateReviewPage() {
+            const container = document.getElementById('review-container');
+            container.innerHTML = '';
+             questions.forEach((q, index) => {
+                const selected = selectedAnswers[index];
+                const isCorrect = selected === q.answer;
+                const isAnswered = selected !== null;
+                let status, bgColor, borderColor, statusColor, statusText;
+                if (isAnswered) {
+                    if(isCorrect) {
+                        status = 'CORRECT'; bgColor = 'bg-green-50'; borderColor = 'border-green-200'; statusColor = 'text-green-700'; statusText = 'bg-green-200';
+                    } else {
+                        status = 'INCORRECT'; bgColor = 'bg-red-50'; borderColor = 'border-red-200'; statusColor = 'text-red-700'; statusText = 'bg-red-200';
+                    }
+                } else {
+                    status = 'UNANSWERED'; bgColor = 'bg-gray-100'; borderColor = 'border-gray-200'; statusColor = 'text-gray-600'; statusText = 'bg-gray-200';
+                }
+                const div = document.createElement('div');
+                div.className = `p-4 ${bgColor} border ${borderColor} rounded-lg mb-4`;
+                let answerHtml = `<p class="text-green-600 font-semibold">Correct Answer: ${getOptionTextFromLetter(q, q.answer)}</p>`;
+                if (isAnswered && !isCorrect) {
+                    answerHtml += `<p class="text-red-600">Your Answer: ${getOptionTextFromLetter(q, selected)}</p>`;
+                }
+                div.innerHTML = `<div class="flex justify-between items-start mb-2">
+                                     <div class="font-bold text-gray-800">Q ${index + 1}: ${q.text}</div>
+                                     <span class="text-xs flex-shrink-0 font-bold ${statusColor} ${statusText} px-2 py-1 rounded-full ml-2">${status}</span>
+                                 </div>
+                                 ${answerHtml}`;
+                container.appendChild(div);
+            });
+            postSubmitScreen.classList.add('hidden');
+            reviewPage.classList.remove('hidden');
+        }
+
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (document.getElementById('user-id').value === 'IMSMARTone' && document.getElementById('password').value === 'IWILLDOIT@2025') {
+                const qCount = rawQuestionData.length;
+                document.getElementById('instruction-question-count').textContent = qCount;
+                document.getElementById('instruction-marks').textContent = qCount;
+                document.getElementById('instruction-total-questions').textContent = qCount;
+                loginPage.classList.add('hidden');
+                instructionsPage.classList.remove('hidden');
+                instructionsPage.classList.add('flex');
+            } else { document.getElementById('login-error').classList.remove('hidden'); }
+        });
+
+        startTestBtn.addEventListener('click', () => {
+            instructionsPage.classList.add('hidden');
+            quizWrapper.classList.remove('hidden');
+            quizWrapper.classList.add('flex');
+            initQuiz();
+        });
+
+        saveNextBtn.addEventListener('click', () => {
+            if (currentQuestionIndex === questions.length - 1) {
+                submitConfirmModal.classList.remove('hidden');
+                submitConfirmModal.classList.add('flex');
+            } else { goToQuestion(currentQuestionIndex + 1); }
+        });
+        
+        submitConfirmYesBtn.addEventListener('click', () => { submitConfirmModal.classList.add('hidden'); submitConfirmModal.classList.remove('flex'); evaluateAndEndTest(); });
+        submitConfirmNoBtn.addEventListener('click', () => { submitConfirmModal.classList.add('hidden'); submitConfirmModal.classList.remove('flex'); });
+        
+        clearResponseBtn.addEventListener('click', () => { 
+            selectedAnswers[currentQuestionIndex] = null; 
+            markedForReview[currentQuestionIndex] = false;
+            updateQuestion(); 
+        });
+        markReviewNextBtn.addEventListener('click', () => {
+            markedForReview[currentQuestionIndex] = true;
+            if (currentQuestionIndex === questions.length - 1) initQuestionPalette();
+            else goToQuestion(currentQuestionIndex + 1);
+        });
+
+        viewResultsBtn.addEventListener('click', showResults);
+        reviewAnswersBtn.addEventListener('click', populateReviewPage);
+        exitReviewBtn.addEventListener('click', () => { reviewPage.classList.add('hidden'); postSubmitScreen.classList.remove('hidden'); });
+        backToOptionsBtn.addEventListener('click', () => { resultsModal.classList.add('hidden'); postSubmitScreen.classList.remove('hidden'); });
+        exitTestBtn.addEventListener('click', () => { location.reload(); });
+        
+        const pauseAction = () => { clearInterval(timerInterval); pauseModal.classList.remove('hidden'); pauseModal.classList.add('flex'); };
+        pauseBtn.addEventListener('click', pauseAction);
+        pauseMobileBtn.addEventListener('click', pauseAction);
+        
+        resumeBtn.addEventListener('click', () => { startTimer(); pauseModal.classList.add('hidden'); pauseModal.classList.remove('flex'); });
+        
+        saveResultsBtn.addEventListener('click', () => {
+            html2canvas(document.getElementById('results-content-wrapper'), { scale: 2 }).then(canvas => {
+                const link = document.createElement('a'); link.download = 'smart-classes-quiz-results.png';
+                link.href = canvas.toDataURL('image/png'); link.click();
+            });
+        });
+
+        const fullscreenAction = () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        };
+        fullscreenBtn.addEventListener('click', fullscreenAction);
+        fullscreenMobileBtn.addEventListener('click', fullscreenAction);
+
+        document.addEventListener('fullscreenchange', () => {
+            const isFullscreen = !!document.fullscreenElement;
+            if (fullscreenIcon) {
+                fullscreenIcon.classList.toggle('fa-expand', !isFullscreen);
+                fullscreenIcon.classList.toggle('fa-compress', isFullscreen);
+            }
+            if (fullscreenMobileIcon) {
+                fullscreenMobileIcon.classList.toggle('fa-expand', !isFullscreen);
+                fullscreenMobileIcon.classList.toggle('fa-compress', isFullscreen);
+            }
+        });
+        
+        function applyFontSizing() {
+            const questionTextEl = document.getElementById('question-text');
+            const optionsContainerEl = document.getElementById('options-container');
+            if (questionTextEl) questionTextEl.style.fontSize = `${baseFontSize}pt`;
+            if (optionsContainerEl) optionsContainerEl.style.fontSize = `${baseFontSize}pt`;
+        }
+        
+        const increaseFont = () => { if (baseFontSize < 28) { baseFontSize += 4; applyFontSizing(); } };
+        const decreaseFont = () => { if (baseFontSize > 10) { baseFontSize -= 4; applyFontSizing(); } };
+
+        fontIncreaseBtn.addEventListener('click', increaseFont);
+        fontDecreaseBtn.addEventListener('click', decreaseFont);
+        fontIncreaseMobileBtn.addEventListener('click', increaseFont);
+        fontDecreaseMobileBtn.addEventListener('click', decreaseFont);
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+        
+        function initQuiz() {
+            const questionGroups = rawQuestionData.reduce((acc, q) => {
+                if (!acc[q.blockId]) acc[q.blockId] = [];
+                acc[q.blockId].push(q);
+                return acc;
+            }, {});
+            const blocksArray = Object.values(questionGroups);
+            shuffleArray(blocksArray);
+            const finalQuestions = [];
+            let questionCounter = 0;
+            blocksArray.forEach(block => {
+                const blockId = block[0].blockId;
+                let context = questionContexts[blockId] || '';
+                if (context) {
+                    const startNum = questionCounter + 1;
+                    const endNum = questionCounter + block.length;
+                    const rangeText = startNum === endNum ? `${startNum}` : `${startNum}-${endNum}`;
+                    context = context.replace('[RANGE]', rangeText);
+                }
+                block.forEach(q => {
+                    let formattedText = '';
+                    if (context) {
+                        formattedText += `<div class="question-context">${context}</div>`;
+                    }
+                    formattedText += q.question;
+                    finalQuestions.push({ ...q, text: formattedText });
+                });
+                questionCounter += block.length;
+            });
+            questions = finalQuestions;
+            questionsSeen = Array(questions.length).fill(false);
+            selectedAnswers = Array(questions.length).fill(null);
+            markedForReview = Array(questions.length).fill(false);
+            questionsSeen[0] = true;
+            applyFontSizing();
+            updateQuestion();
+            startTimer();
+        }
+    </script>
+</body>
+</html>
