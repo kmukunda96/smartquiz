@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spelling Bee</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation; /* Prevents double-tap zoom on mobile */
+        }
+        .focus-ring {
+            transition: box-shadow 0.2s ease-in-out;
+        }
+        .focus-ring:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.6);
+        }
+        @keyframes shrink {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+        .timer-bar-animate {
+            animation: shrink 20s linear forwards; /* Adjusted timer for spelling */
+        }
+        .screen {
+            transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
+        }
+        .screen.hidden {
+            opacity: 0;
+            transform: scale(0.95);
+            pointer-events: none;
+            position: absolute;
+        }
+        .highlight-letter {
+            color: #fbbf24; /* amber-400 */
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex justify-center min-h-screen p-4 pt-8 sm:pt-4 sm:items-center">
+
+    <div id="game-container" class="w-full max-w-lg mx-auto bg-gray-800 p-6 sm:p-8 rounded-2xl shadow-2xl border border-gray-700 text-center relative overflow-hidden">
+
+        <!-- Login Screen -->
+        <div id="login-screen" class="screen space-y-6">
+            <h2 class="text-2xl font-semibold text-gray-400 tracking-widest">SMART Classes</h2>
+            <h1 class="text-5xl md:text-6xl font-bold text-amber-400">Welcome</h1>
+            <p class="text-lg text-gray-300">Log in to start the Spelling Bee.</p>
+            <form id="login-form" class="space-y-4">
+                <input type="text" id="username" placeholder="Username" class="w-full text-center bg-gray-700 text-white text-xl p-3 rounded-lg border-2 border-gray-600 focus:border-amber-500 focus-ring" required>
+                <input type="password" id="password" placeholder="Password: •••••••••" class="w-full text-center bg-gray-700 text-white text-xl p-3 rounded-lg border-2 border-gray-600 focus:border-amber-500 focus-ring" required>
+                <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-lg transform hover:scale-105 transition-transform duration-200 focus-ring">
+                    Login & Start
+                </button>
+            </form>
+            <p id="login-error" class="text-red-400 h-4"></p>
+        </div>
+
+        <!-- Difficulty Selection Screen -->
+        <div id="start-screen" class="screen hidden space-y-6">
+            <h1 class="text-4xl md:text-5xl font-bold text-amber-400">Choose Difficulty</h1>
+            <div class="text-center">
+                <p class="text-lg text-gray-400">Welcome, <span id="welcome-username" class="font-bold text-gray-200"></span>!</p>
+                <p class="text-lg text-gray-300">Your Best Score: <span id="best-score-start" class="font-bold text-amber-400">0</span></p>
+            </div>
+            <div class="space-y-4 pt-4">
+                <button id="easy-button" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-8 rounded-lg text-2xl shadow-lg transform hover:scale-105 transition-transform duration-200 focus-ring">
+                    Easy <span class="block text-sm font-normal">(Find 2 Letters)</span>
+                </button>
+                <button id="moderate-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg text-2xl shadow-lg transform hover:scale-105 transition-transform duration-200 focus-ring">
+                    Moderate <span class="block text-sm font-normal">(Find 3 Letters)</span>
+                </button>
+            </div>
+        </div>
+
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen hidden w-full">
+            <div class="grid grid-cols-4 gap-2 sm:gap-4 mb-4 text-center">
+                <div>
+                    <span class="text-gray-400 text-xs sm:text-sm uppercase tracking-wider">SCORE</span>
+                    <p id="score" class="text-2xl sm:text-3xl font-bold">0</p>
+                </div>
+                 <div>
+                    <span class="text-gray-400 text-xs sm:text-sm uppercase tracking-wider">BEST</span>
+                    <p id="best-score-game" class="text-2xl sm:text-3xl font-bold">0</p>
+                </div>
+                <div>
+                    <span class="text-gray-400 text-xs sm:text-sm uppercase tracking-wider">GAME TIME</span>
+                    <p id="quiz-timer-display" class="text-2xl sm:text-3xl font-bold">5:00</p>
+                </div>
+                <div>
+                    <span class="text-gray-400 text-xs sm:text-sm uppercase tracking-wider">Q-TIMER</span>
+                    <p id="timer-display" class="text-2xl sm:text-3xl font-bold">20</p>
+                </div>
+            </div>
+            <p class="text-center text-gray-400 mb-4 h-6">User: <span id="game-username" class="font-bold text-gray-200"></span></p>
+
+            <div class="w-full bg-gray-700 rounded-full h-2.5 mb-8">
+                <div id="timer-bar" class="bg-amber-500 h-2.5 rounded-full"></div>
+            </div>
+
+            <div class="bg-gray-900 p-4 sm:p-6 rounded-lg shadow-inner border border-gray-700 mb-8 min-h-[120px] flex items-center justify-center">
+                <p id="question-text" class="text-3xl sm:text-4xl lg:text-5xl font-mono tracking-widest"></p>
+            </div>
+            
+            <div id="answer-area" class="grid grid-cols-2 gap-4"></div>
+            <div id="feedback" class="mt-4 text-2xl font-semibold h-8 transition-opacity duration-300 opacity-0"></div>
+            
+        </div>
+        
+        <!-- End Screen -->
+        <div id="end-screen" class="screen hidden space-y-8">
+            <h2 class="text-5xl md:text-6xl font-bold text-amber-400">Time's Up!</h2>
+            <div class="text-center">
+                <p class="text-lg text-gray-300">Your Final Score</p>
+                <p id="final-score" class="text-7xl font-bold">0</p>
+            </div>
+            <button id="play-again-button" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-4 px-8 rounded-lg text-2xl shadow-lg transform hover:scale-105 transition-transform duration-200 focus-ring">
+                Restart Quiz
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+        const wordList = [
+            'aberration', 'abhorrent', 'acquiesce', 'anachronism', 'apartheid', 'archipelago', 'bourgeoisie', 'buoyancy', 'camouflage', 'cinematography',
+            'conscientious', 'demagogue', 'diphthong', 'ecstasy', 'effervescent', 'embezzlement', 'euphemism', 'exaggerate', 'fuchsia', 'gregarious',
+            'haemorrhage', 'idiosyncrasy', 'inconsequential', 'juxtaposition', 'kaleidoscope', 'logorrhoea', 'lieutenant', 'maintenance', 'manoeuvre', 'millennium',
+            'nauseous', 'onomatopoeia', 'paparazzi', 'pharaoh', 'phenomenon', 'playwright', 'prerogative', 'psychedelic', 'queue', 'reconnaissance',
+            'rendezvous', 'rhetoric', 'schizophrenia', 'sovereignty', 'synecdoche', 'tyrannical', 'ubiquitous', 'unctuous', 'vacillate', 'vexatious',
+            'whimsical', 'xenophobia', 'yacht', 'zealous', 'zucchini', 'accommodate', 'beautiful', 'calendar', 'definitely', 'embarrass', 'favourite',
+            'government', 'harass', 'immediately', 'knowledge', 'library', 'necessary', 'occasionally', 'privilege', 'questionnaire', 'receive',
+            'sincerely', 'tomorrow', 'until', 'weird', 'achieve', 'address', 'apparent', 'argument', 'assassination', 'basically', 'beginning',
+            'believe', 'bizarre', 'business', 'cemetery', 'chauffeur', 'colleague', 'committee', 'conscious', 'curiosity', 'deceive', 'discipline',
+            'drunkenness', 'environment', 'existence', 'fahrenheit', 'finally', 'fluorescent', 'foreign', 'foreseeable', 'forty', 'forward',
+            'friend', 'further', 'gist', 'glamorous', 'governor', 'grateful', 'guarantee', 'guidance', 'happened', 'humorous', 'ignorance',
+            'imitate', 'independent', 'indispensable', 'innocuous', 'intelligence', 'its', 'jewellery', 'judgement', 'kernel', 'leisure',
+            'liaison', 'licence', 'lightning', 'loneliness', 'manageable', 'mischievous', 'misspell', 'mortgage', 'mosquito', 'mysterious',
+            'neighbour', 'noticeable', 'occurrence', 'outrageous', 'parliament', 'pastime', 'perceive', 'perseverance', 'personnel', 'plagiarize',
+            'possess', 'precede', 'principal', 'principle', 'pronunciation', 'proof', 'propaganda', 'publicly', 'really', 'recommend',
+            'relevant', 'restaurant', 'rhythm', 'ridiculous', 'sacrilegious', 'schedule', 'seize', 'separate', 'sergeant', 'siege',
+            'similar', 'skilful', 'speech', 'subtly', 'successful', 'supersede', 'surprise', 'technical', 'temperamental', 'thoroughly',
+            'though', 'through', 'tongue', 'truly', 'unanimous', 'unnecessary', 'vaccinate', 'vacuum', 'vicious', 'weather', 'wednesday',
+            'abbreviate', 'abolish', 'absence', 'absorbent', 'abstract', 'absurd', 'abundance', 'accelerate', 'accessible', 'accessory',
+            'acclaim', 'acclimatise', 'accompany', 'accomplice', 'accumulate', 'accusation', 'accustom', 'acerbic', 'acquaintance', 'acquittal',
+            'acrimonious', 'acronym', 'additive', 'adherence', 'adhesive', 'adjacent', 'adjourn', 'admonish', 'adolescent', 'advantageous',
+            'adventurous', 'adversary', 'advocacy', 'aesthetic', 'affable', 'affidavit', 'affiliate', 'affinity', 'affluent', 'aggravate',
+            'aggregate', 'aggressive', 'agitation', 'alleviate', 'allocate', 'allusion', 'alphabetical', 'altercation', 'alternate', 'amateur',
+            'ambassador', 'ambiguous', 'ambitious', 'ambivalent', 'amicable', 'ammunition', 'anaesthetic', 'analogy', 'analytical', 'anecdote',
+            'annihilate', 'anniversary', 'anonymous', 'antagonise', 'antecedent', 'anthology', 'anticipate', 'antipathy', 'antiquated', 'antithesis',
+            'anxiety', 'apologetic', 'apparatus', 'appetite', 'applicable', 'appreciate', 'apprehensive', 'appropriate', 'approximate', 'arbitrary',
+            'archaic', 'aristocracy', 'arrogant', 'articulate', 'ascetic', 'asphyxiate', 'aspirations', 'assent', 'assessment', 'assiduous',
+            'assimilate', 'association', 'assumption', 'assurance', 'atrocious', 'attachment', 'attainable', 'attendant', 'attribute', 'audacious',
+            'audible', 'auspicious', 'authentic', 'authoritative', 'autobiography', 'autonomy', 'auxiliary', 'avarice', 'bachelor', 'bankruptcy',
+            'barbarous', 'barrister', 'beneficial', 'benevolent', 'bequeath', 'bewilder', 'bibliography', 'bicentennial', 'bilingual', 'biography',
+            'blasphemous', 'boisterous', 'botanical', 'bountiful', 'boycott', 'brilliance', 'brochure', 'bureaucracy', 'burglar', 'calamitous',
+            'callous', 'candidacy', 'capitulate', 'capricious', 'captivate', 'caricature', 'carnivorous', 'catalogue', 'catalyst', 'catastrophe',
+            'categorical', 'cauliflower', 'cautious', 'celestial', 'censorious', 'centenary', 'ceramics', 'ceremonial', 'certitude', 'challengeable',
+            'chancellor', 'changeable', 'characteristic', 'charismatic', 'chastisement', 'chauvinism', 'chronological', 'circuitous', 'circulate', 'circumference',
+            'circumlocution', 'circumspect', 'circumstantial', 'civilian', 'clairvoyant', 'clandestine', 'clarification', 'claustrophobia', 'coalesce', 'coalition',
+            'coercion', 'cognisant', 'coherent', 'coincide', 'collaborate', 'collateral', 'colloquial', 'collusion', 'combustible', 'commemorate',
+            'commence', 'commendable', 'commensurate', 'commercial', 'commissioner', 'commitment', 'commodious', 'commonwealth', 'communicative', 'communique',
+            'companion', 'comparable', 'compassionate', 'compatible', 'compelling', 'compendium', 'compensate', 'competence', 'complacent', 'complementary',
+            'compliance', 'complicate', 'compliment', 'component', 'comprehend', 'comprehensive', 'compulsory', 'compunction', 'conceal', 'concede',
+            'conceited', 'conceivable', 'concentrate', 'concentric', 'conception', 'concession', 'conciliatory', 'conclusive', 'concoction', 'concomitant',
+            'concurrence', 'condemn', 'condescend', 'conditional', 'condolence', 'conducive', 'confederate', 'confer', 'confidant', 'configuration',
+            'confinement', 'confiscate', 'conflagration', 'confluence', 'conformity', 'confound', 'confrontation', 'congenial', 'conglomerate', 'congratulate',
+            'congregate', 'congruent', 'conjecture', 'conjugal', 'connivance', 'connoisseur', 'connotation', 'conquer', 'conscience', 'conscription',
+            'consecrate', 'consecutive', 'consensus', 'consequence', 'conservative', 'conservatory', 'considerable', 'consistency', 'consolidate', 'consonant',
+            'conspicuous', 'conspiracy', 'constituency', 'constituent', 'constraint', 'construe', 'consummate', 'contagious', 'contaminate', 'contemplate',
+            'contemptible', 'contentious', 'contiguous', 'contingency', 'continuation', 'continuity', 'controversial', 'convalesce', 'convenience', 'conventional',
+            'converge', 'conversant', 'conveyance', 'convivial', 'convoluted', 'cooperate', 'coordinate', 'copious', 'cordial', 'coronation',
+            'corporate', 'corpulent', 'correlate', 'correspond', 'corroborate', 'corruptible', 'cosmopolitan', 'councillor', 'counsellor', 'countenance',
+            'counterfeit', 'courageous', 'courteous', 'covert', 'credence', 'credulous', 'criterion', 'criticism', 'critique', 'crocheting',
+            'crucial', 'culinary', 'culminate', 'culpable', 'cultivate', 'cumulative', 'cunning', 'curriculum', 'cursory', 'curtail',
+            'custodian', 'cynicism', 'cylindrical', 'debatable', 'debilitate', 'decadence', 'deceitful', 'deciduous', 'decipher', 'declarative',
+            'decontaminate', 'decorous', 'decrement', 'decrepit', 'deducible', 'defamation', 'defendant', 'deferential', 'deficiency', 'definitive',
+            'deflationary', 'deformity', 'degenerate', 'dehydrated', 'deity', 'dejected', 'delectable', 'delegate', 'deliberate', 'delicacy',
+            'delinquent', 'delirious', 'delusion', 'demilitarise', 'demobilise', 'democracy', 'demolish', 'demonstrable', 'demoralise', 'demur',
+            'denigrate', 'denomination', 'denouement', 'denounce', 'dentifrice', 'dependency', 'depict', 'deplete', 'deplorable', 'depreciate',
+            'deprivation', 'deputy', 'derelict', 'derision', 'derivative', 'dermatology', 'derogatory', 'desecrate', 'desiccate', 'designate',
+            'desirable', 'despair', 'despicable', 'despondent', 'despotism', 'destabilise', 'destitute', 'desultory', 'detachment', 'deteriorate',
+            'determinant', 'deterrent', 'detestable', 'dethrone', 'detrimental', 'devastate', 'deviation', 'devious', 'devour', 'dexterity',
+            'diabolical', 'diagnosis', 'diagonal', 'diagrammatic', 'dialect', 'diaphanous', 'diatribe', 'dichotomy', 'dictatorial', 'didactic',
+            'differentiate', 'diffidence', 'diffusion', 'digress', 'dilapidated', 'dilemma', 'diligence', 'diminutive', 'diplomacy', 'dire',
+            'disaffected', 'disagreeable', 'disappearance', 'disapprove', 'disarm', 'disarray', 'disastrous', 'disavow', 'disburse', 'discernible',
+            'disciple', 'disciplinary', 'disclaim', 'disclose', 'discomfiture', 'disconcert', 'disconsolate', 'discordant', 'discotheque', 'discredit',
+            'discreet', 'discrepancy', 'discretion', 'discriminate', 'discursive', 'disdain', 'disenfranchise', 'disgraceful', 'dishevelled', 'disingenuous',
+            'disintegrate', 'disinterested', 'dislodge', 'dismantle', 'dismay', 'dismissal', 'disparage', 'disparate', 'dispassionate', 'dispatch',
+            'dispel', 'dispensable', 'dispirited', 'displace', 'disposition', 'disproportionate', 'disputatious', 'disquiet', 'disregard', 'disreputable',
+            'disruptive', 'dissect', 'disseminate', 'dissension', 'disservice', 'dissident', 'dissipate', 'dissociate', 'dissolute', 'dissuade',
+            'distemper', 'distensible', 'distillation', 'distinction', 'distraught', 'distrustful', 'diurnal', 'divergence', 'diversion', 'divisive',
+            'divulge', 'docile', 'doctrinaire', 'dogmatic', 'domicile', 'dominant', 'dossier', 'dreadful', 'dubious', 'duplicate',
+            'duplicity', 'durable', 'dutiable', 'dwarfish', 'dynamic', 'dynasty', 'earthenware', 'ecclesiastical', 'echelon', 'eclectic',
+            'economise', 'ecumenical', 'edible', 'edifice', 'editorial', 'educability', 'eerie', 'effectual', 'efficacious', 'efficient',
+            'egalitarian', 'egocentric', 'egregious', 'elaborate', 'electorate', 'elegance', 'elegy', 'elementary', 'eligible', 'eliminate',
+            'eloquence', 'elucidate', 'elusive', 'emaciated', 'emancipate', 'embargo', 'embark', 'embellish', 'embody', 'embrace',
+            'embroider', 'emigrate', 'eminence', 'emissary', 'emollient', 'empathy', 'emphasis', 'empirical', 'emulate', 'enamoured',
+            'encapsulate', 'enchant', 'encompass', 'encounter', 'encourage', 'encroach', 'encumber', 'encyclopaedia', 'endeavour', 'endemic',
+            'endorse', 'enervate', 'enfeeble', 'enfranchise', 'engender', 'engross', 'enhance', 'enigma', 'enlighten', 'enlist',
+            'enmity', 'enormity', 'enrapture', 'ensconce', 'ensue', 'entangle', 'enthusiasm', 'entice', 'entourage', 'entrepreneur',
+            'enumerate', 'enunciate', 'envelop', 'envisage', 'ephemeral', 'epicentre', 'epicurean', 'epilogue', 'episode', 'epistle',
+            'epitome', 'epoch', 'equable', 'equanimity', 'equestrian', 'equilibrium', 'equinox', 'equipment', 'equitable', 'equivalent',
+            'equivocal', 'eradicate', 'erasable', 'erratic', 'erroneous', 'erudite', 'escalate', 'escapade', 'eschew', 'esoteric',
+            'espionage', 'espouse', 'esteem', 'estimable', 'estranged', 'ethereal', 'etiquette', 'etymology', 'eulogy', 'euthanasia',
+            'evacuate', 'evanescent', 'evasive', 'eventual', 'exacerbate', 'exasperate', 'excavate', 'exceed', 'excel', 'excerpt',
+            'excessive', 'exchangeable', 'exchequer', 'excise', 'excitability', 'exclaim', 'exclude', 'excommunicate', 'excoriate', 'excrete',
+            'exculpate', 'excursion', 'execrable', 'exemplary', 'exempt', 'exertion', 'exhilarate', 'exhort', 'exhume', 'exigency',
+            'exiguous', 'exonerate', 'exorbitant', 'exorcise', 'exotic', 'expansive', 'expatriate', 'expedient', 'expedite', 'expeditious',
+            'expenditure', 'expertise', 'expiate', 'expletive', 'explicable', 'explicit', 'exploit', 'exponent', 'exposition', 'expostulate',
+            'expound', 'expropriate', 'expulsion', 'expunge', 'expurgate', 'exquisite', 'extant', 'extemporise', 'extenuate', 'exterminate',
+            'extinct', 'extinguish', 'extol', 'extort', 'extradite', 'extraneous', 'extraordinary', 'extrapolate', 'extravagant', 'extremist',
+            'extricate', 'extrovert', 'exuberant', 'exultation', 'fabricate', 'fabulous', 'facetious', 'facilitate', 'facsimile', 'fallacious',
+            'fallible', 'falsify', 'fanatical', 'fastidious', 'fathom', 'fatuous', 'feasible', 'feckless', 'fecund', 'feign',
+            'felicitous', 'ferocious', 'fervent', 'feudalism', 'fictitious', 'fidelity', 'fiendish', 'fiery', 'figurative', 'filament',
+            'filibuster', 'finagle', 'finesse', 'finite', 'fiscal', 'flabbergasted', 'flagrant', 'flamboyant', 'flammable', 'flaunt',
+            'flimsy', 'flippant', 'florid', 'flotilla', 'fluctuate', 'foliage', 'forage', 'forbearance', 'forcible', 'foreboding',
+            'foreclose', 'forensic', 'forfeit', 'forgery', 'formidable', 'formulate', 'forsake', 'forswear', 'fortify', 'fortuitous',
+            'foster', 'fractious', 'fragile', 'fragmentary', 'fragrance', 'fraternal', 'fraudulent', 'frenetic', 'frivolous', 'frugal',
+            'frustrate', 'fugitive', 'fulcrum', 'fulminate', 'fulsome', 'fundamental', 'fungible', 'furbish', 'furlough', 'furtive',
+            'fusillade', 'futile', 'gadgetry', 'gaiety', 'gallant', 'galvanise', 'gargantuan', 'garish', 'garrulous', 'gastronomy',
+            'gaudy', 'gauge', 'genealogy', 'generality', 'generate', 'generosity', 'genesis', 'genial', 'genocide', 'genteel',
+            'genuine', 'geriatric', 'germane', 'gesticulate', 'ghastly', 'ghetto', 'gimmickry', 'gingerly', 'glacial', 'gluttonous',
+            'gnarled', 'gorgeous', 'gossamer', 'gourmet', 'grandiose', 'granular', 'graphical', 'gratuitous', 'grievance', 'grievous',
+            'grotesque', 'gruelling', 'guile', 'gullible', 'gynaecology', 'habitable', 'habitual', 'haggard', 'hallucination', 'haphazard',
+            'harangue', 'harbinger', 'harrowing', 'haughtiness', 'hearse', 'heinous', 'herbaceous', 'herbivorous', 'hereditary', 'heresy',
+            'hermetic', 'heterogeneous', 'heuristic', 'hiatus', 'hibernal', 'hideous', 'hierarchy', 'hieroglyphic', 'hilarious', 'hoard',
+            'hoarse', 'holistic', 'hologram', 'homage', 'homicide', 'homogeneous', 'homonym', 'honourable', 'horrendous', 'horticulture',
+            'hospitable', 'hostility', 'humanitarian', 'humiliate', 'hundredth', 'hybrid', 'hydraulics', 'hygiene', 'hyperbole', 'hypnosis',
+            'hypocrisy', 'hypothermia', 'hypothesis', 'hysterical', 'iconoclast', 'idealism', 'ideology', 'idiom', 'idolatry', 'ignite',
+            'ignominious', 'illegible', 'illegitimate', 'illicit', 'illiterate', 'illogical', 'illuminate', 'illusion', 'illustrious', 'imaginable',
+            'imbecile', 'imbibe', 'imbroglio', 'immaculate', 'immaterial', 'immature', 'immeasurable', 'immerse', 'immigrate', 'imminent',
+            'immobile', 'immoderate', 'immoral', 'immortalise', 'immune', 'immutable', 'impair', 'impartial', 'impassable', 'impasse',
+            'impassive', 'impeccable', 'impecunious', 'impede', 'impel', 'impenetrable', 'imperative', 'imperceptible', 'imperialism', 'imperious',
+            'impermeable', 'impersonal', 'impersonate', 'impertinent', 'imperturbable', 'impervious', 'impetuous', 'implacable', 'implausible', 'implement',
+            'implicate', 'implicit', 'implore', 'impolite', 'imponderable', 'importunate', 'imposing', 'impotent', 'impoverish', 'impracticable',
+            'imprecise', 'impregnable', 'impresario', 'impressionable', 'impromptu', 'impropriety', 'improvident', 'improvise', 'imprudent', 'impudent',
+            'impugn', 'impulsive', 'impunity', 'inaccessible', 'inaccurate', 'inactive', 'inadequacy', 'inadvertent', 'inadvisable', 'inane',
+            'inanimate', 'inarticulate', 'inaugurate', 'incandescent', 'incantation', 'incapacitate', 'incarcerate', 'incarnate', 'incendiary', 'incense',
+            'incentive', 'incessant', 'inchoate', 'incidence', 'incipient', 'incisive', 'incite', 'inclement', 'inclination', 'incoherent',
+            'incompatible', 'incompetent', 'incomplete', 'incomprehensible', 'inconceivable', 'incongruous', 'inconsiderate', 'inconsistent', 'incorrigible', 'incredulous',
+            'increment', 'incriminate', 'incubate', 'inculcate', 'incumbent', 'incurable', 'incursion', 'indecipherable', 'indecisive', 'indefatigable',
+            'indefeasible', 'indefensible', 'indefinable', 'indelible', 'indemnify', 'indescribable', 'indestructible', 'indeterminate', 'indicative', 'indictment',
+            'indifference', 'indigenous', 'indigent', 'indignant', 'indiscriminate', 'indisputable', 'indissoluble', 'indistinct', 'indoctrinate', 'indolent',
+            'indomitable', 'indubitable', 'inducement', 'indulgent', 'industrial', 'inebriated', 'inedible', 'ineffable', 'ineffectual', 'inefficacious',
+            'inefficient', 'ineligible', 'ineluctable', 'ineptitude', 'inequitable', 'inert', 'inescapable', 'inestimable', 'inevitable', 'inexhaustible',
+            'inexorable', 'inexpedient', 'inexpensive', 'inexplicable', 'inextricable', 'infallible', 'infamous', 'infantile', 'infatuated', 'infectious',
+            'infelicitous', 'inferential', 'inferiority', 'infernal', 'infestation', 'infidel', 'infiltrate', 'infinitesimal', 'inflammatory', 'inflatable',
+            'inflexible', 'infliction', 'influential', 'informant', 'infraction', 'infrequent', 'infuriate', 'ingenious', 'ingenuous', 'ingrained',
+            'ingratiate', 'inhabitant', 'inherent', 'inhibit', 'inhospitable', 'inhuman', 'inimical', 'inimitable', 'iniquitous', 'initiation',
+            'initiative', 'injurious', 'innate', 'innocence', 'innovation', 'innuendo', 'inoperable', 'inopportune', 'inordinate', 'inorganic',
+            'inquisitive', 'insatiable', 'inscrutable', 'insentient', 'inseparable', 'insidious', 'insightful', 'insignificant', 'insinuate', 'insipid',
+            'insolent', 'insoluble', 'insomnia', 'insouciant', 'inspirational', 'instability', 'instigate', 'instil', 'institutional', 'insubordinate',
+            'insufferable', 'insufficient', 'insular', 'insuperable', 'insurgent', 'insurmountable', 'insurrection', 'intangible', 'integral', 'intellectual'
+        ];
+
+        // DOM Elements
+        const screens = { login: document.getElementById('login-screen'), start: document.getElementById('start-screen'), game: document.getElementById('game-screen'), end: document.getElementById('end-screen') };
+        const loginForm = document.getElementById('login-form'), usernameInput = document.getElementById('username'), passwordInput = document.getElementById('password'), loginError = document.getElementById('login-error');
+        const easyButton = document.getElementById('easy-button');
+        const moderateButton = document.getElementById('moderate-button');
+        const playAgainButton = document.getElementById('play-again-button');
+        const scoreDisplay = document.getElementById('score'), finalScoreDisplay = document.getElementById('final-score'), bestScoreStartDisplay = document.getElementById('best-score-start'), bestScoreGameDisplay = document.getElementById('best-score-game');
+        const welcomeUsername = document.getElementById('welcome-username'), gameUsername = document.getElementById('game-username');
+        const timerDisplay = document.getElementById('timer-display'), quizTimerDisplay = document.getElementById('quiz-timer-display'), timerBar = document.getElementById('timer-bar');
+        const questionText = document.getElementById('question-text'), answerArea = document.getElementById('answer-area'), feedback = document.getElementById('feedback');
+
+        // Game State
+        let score, timer, quizTime, timerInterval, quizTimerInterval, currentQuestion, currentUser, bestScore, gameDifficulty;
+        let shuffledWords = [];
+        const QUESTION_TIME = 20;
+        const GAME_TIME = 300;
+
+        function transitionToScreen(toScreen) {
+            Object.values(screens).forEach(screen => { if (!screen.classList.contains('hidden')) screen.classList.add('hidden') });
+            screens[toScreen].classList.remove('hidden');
+        }
+
+        function openFullscreen() {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) { elem.requestFullscreen().catch(err => console.warn(`Fullscreen denied: ${err.message}`)); } 
+            else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen().catch(err => console.warn(`Fullscreen denied: ${err.message}`)); } 
+            else if (elem.msRequestFullscreen) { elem.msRequestFullscreen().catch(err => console.warn(`Fullscreen denied: ${err.message}`)); }
+        }
+
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+            if (password === '214214214' && username) {
+                currentUser = username;
+                openFullscreen();
+                bestScore = parseInt(localStorage.getItem(`spellingBestScore_${currentUser}`) || '0');
+                bestScoreStartDisplay.textContent = bestScore;
+                welcomeUsername.textContent = currentUser;
+                transitionToScreen('start');
+                loginError.textContent = '';
+                passwordInput.value = '';
+            } else {
+                loginError.textContent = 'Invalid username or password.';
+            }
+        });
+
+        function startGame() {
+            transitionToScreen('game');
+            score = 0;
+            scoreDisplay.textContent = score;
+            bestScoreGameDisplay.textContent = bestScore;
+            gameUsername.textContent = currentUser;
+            quizTime = GAME_TIME;
+            quizTimerDisplay.textContent = "5:00";
+            shuffledWords = [...wordList].sort(() => 0.5 - Math.random());
+            startQuizTimer();
+            nextQuestion();
+        }
+
+        function startQuizTimer() {
+            clearInterval(quizTimerInterval); // Ensure no multiple timers
+            quizTimerInterval = setInterval(() => {
+                if (quizTime > 0) quizTime--;
+                const minutes = Math.floor(quizTime / 60);
+                const seconds = quizTime % 60;
+                quizTimerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                if (quizTime <= 0) endGame();
+            }, 1000);
+        }
+
+        function endGame() {
+            clearInterval(timerInterval);
+            clearInterval(quizTimerInterval);
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem(`spellingBestScore_${currentUser}`, bestScore);
+                bestScoreStartDisplay.textContent = bestScore;
+            }
+            finalScoreDisplay.textContent = score;
+            transitionToScreen('end');
+        }
+
+        function nextQuestion() {
+            if (quizTime <= 0 || shuffledWords.length === 0) {
+                if (!screens.game.classList.contains('hidden')) endGame();
+                return;
+            }
+            // Disable new interaction events for the next question
+            questionText.onclick = null;
+            questionText.onmousedown = null;
+            questionText.ontouchstart = null;
+            questionText.onmouseup = null;
+            questionText.onmouseleave = null;
+            questionText.ontouchend = null;
+            questionText.ontouchmove = null;
+            startQuizTimer(); // Resume game timer
+            feedback.classList.add('opacity-0');
+            answerArea.innerHTML = '';
+            questionText.classList.remove('tracking-widest', 'text-green-400', 'text-orange-400');
+
+            setTimeout(() => {
+                generateQuestion();
+                startTimer();
+            }, 400);
+        }
+
+        function generateQuestion() {
+            let word;
+            // Ensure word is long enough for moderate difficulty
+            do {
+                word = shuffledWords.pop();
+            } while (gameDifficulty === 'moderate' && word.length < 5 && shuffledWords.length > 0)
+            
+            if (!word) {
+                endGame();
+                return;
+            }
+
+            let indices;
+            let letters;
+
+            if (gameDifficulty === 'moderate') {
+                let index1, index2, index3;
+                let attempts = 0;
+                do {
+                    index1 = Math.floor(Math.random() * word.length);
+                    index2 = Math.floor(Math.random() * word.length);
+                    index3 = Math.floor(Math.random() * word.length);
+                    attempts++;
+                    if (attempts > 50) { // Failsafe to prevent infinite loops, just get unique indices
+                        const uniqueIndices = new Set();
+                        while(uniqueIndices.size < 3) {
+                            uniqueIndices.add(Math.floor(Math.random() * word.length));
+                        }
+                        [index1, index2, index3] = Array.from(uniqueIndices);
+                        break;
+                    }
+                } while (
+                    index1 === index2 || index1 === index3 || index2 === index3 ||
+                    Math.abs(index1 - index2) === 1 || Math.abs(index1 - index3) === 1 || Math.abs(index2 - index3) === 1
+                );
+                indices = [index1, index2, index3];
+                letters = [word[index1], word[index2], word[index3]].sort();
+
+            } else { // Easy level
+                let index1, index2;
+                do {
+                    index1 = Math.floor(Math.random() * word.length);
+                    index2 = Math.floor(Math.random() * word.length);
+                } while (index1 === index2 || Math.abs(index1 - index2) === 1);
+                indices = [index1, index2];
+                letters = [word[index1], word[index2]].sort();
+            }
+
+            currentQuestion = { word: word, answer: letters.join(', '), indices: indices };
+
+            let displayWord = word.split('');
+            indices.forEach(i => displayWord[i] = '?');
+            questionText.textContent = displayWord.join('');
+            questionText.classList.add('tracking-widest');
+
+            const options = [currentQuestion.answer];
+            const vowels = 'aeiou';
+            const consonants = 'bcdfghjklmnpqrstvwxyz';
+            const letterCount = (gameDifficulty === 'moderate') ? 3 : 2;
+
+            while (options.length < 4) {
+                let wrongLetters = [];
+                for(let i = 0; i < letterCount; i++) {
+                    let letter = Math.random() < 0.5 ? vowels[Math.floor(Math.random() * vowels.length)] : consonants[Math.floor(Math.random() * consonants.length)];
+                    wrongLetters.push(letter);
+                }
+                let wrongOption = wrongLetters.sort().join(', ');
+                if (!options.includes(wrongOption) && wrongOption !== currentQuestion.answer) {
+                    options.push(wrongOption);
+                }
+            }
+            
+            options.sort(() => 0.5 - Math.random());
+            options.forEach(option => createOptionButton(option));
+        }
+        
+        function createOptionButton(optionText) {
+            const button = document.createElement('button');
+            button.textContent = optionText;
+            button.className = 'bg-gray-700 hover:bg-gray-600 text-white font-bold py-4 px-2 rounded-lg text-xl md:text-2xl shadow-md transform hover:scale-105 transition-transform duration-200 focus-ring';
+            button.addEventListener('click', () => checkAnswer(optionText));
+            answerArea.appendChild(button);
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timer = QUESTION_TIME;
+            timerDisplay.textContent = timer;
+            timerBar.style.transition = 'none';
+            timerBar.style.width = '100%';
+            void timerBar.offsetWidth; 
+            timerBar.style.transition = `width ${QUESTION_TIME}s linear`;
+            timerBar.style.width = '0%';
+
+            timerInterval = setInterval(() => {
+                timer--;
+                timerDisplay.textContent = timer;
+                if (timer <= 0) handleAnswer(false);
+            }, 1000);
+        }
+        
+        function checkAnswer(userAnswer) {
+            handleAnswer(userAnswer === currentQuestion.answer);
+        }
+
+        function handleAnswer(isCorrect) {
+            clearInterval(timerInterval);
+            clearInterval(quizTimerInterval); // PAUSE game timer
+            timerBar.style.width = timerBar.getBoundingClientRect().width + 'px'; // Stop animation
+
+            answerArea.innerHTML = '';
+
+            if (isCorrect) {
+                score++;
+                scoreDisplay.textContent = score;
+                feedback.textContent = 'Correct!';
+                feedback.className = 'mt-4 text-2xl font-semibold h-8 text-green-400 opacity-100';
+                questionText.classList.add('text-green-400');
+            } else {
+                feedback.textContent = `Incorrect!`;
+                feedback.className = 'mt-4 text-2xl font-semibold h-8 text-red-400 opacity-100';
+                questionText.classList.add('text-orange-400');
+            }
+
+            let highlightedWord = currentQuestion.word.split('').map((char, index) => {
+                return currentQuestion.indices.includes(index) ? `<span class="highlight-letter">${char}</span>` : char;
+            }).join('');
+            questionText.innerHTML = highlightedWord;
+            questionText.classList.remove('tracking-widest');
+
+            // Add long-press for dictionary and triple-tap for Google search
+            let pressTimer;
+            let clickCount = 0;
+            let clickTimer = null;
+
+            const openDictionary = () => {
+                const word = currentQuestion.word;
+                const url = `https://www.oed.com/search/dictionary/?q=${encodeURIComponent(word)}`;
+                window.open(url, '_blank');
+            };
+
+            const openGoogleSearch = () => {
+                const word = currentQuestion.word;
+                const url = `https://www.google.com/search?q=${encodeURIComponent(word)}`;
+                window.open(url, '_blank');
+            };
+
+            const startPress = () => {
+                pressTimer = window.setTimeout(openDictionary, 800); // 800ms for long press
+            };
+
+            const cancelPress = () => {
+                clearTimeout(pressTimer);
+            };
+            
+            questionText.onclick = () => {
+                clickCount++;
+                if (clickCount === 1) {
+                    clickTimer = setTimeout(() => { clickCount = 0; }, 500); // 500ms window for multi-click
+                } else if (clickCount === 3) {
+                    clearTimeout(clickTimer);
+                    clickCount = 0;
+                    openGoogleSearch();
+                }
+            };
+
+            questionText.onmousedown = startPress;
+            questionText.ontouchstart = startPress;
+
+            questionText.onmouseup = cancelPress;
+            questionText.onmouseleave = cancelPress;
+            questionText.ontouchend = cancelPress;
+            questionText.ontouchmove = cancelPress;
+
+            const nextButton = document.createElement('button');
+            nextButton.textContent = 'Next →';
+            nextButton.className = 'w-full mt-4 bg-amber-600 hover:bg-amber-700 text-white font-bold py-4 px-8 rounded-lg text-2xl shadow-lg transform hover:scale-105 transition-transform duration-200 focus-ring';
+            nextButton.onclick = nextQuestion;
+            answerArea.appendChild(nextButton);
+            nextButton.focus();
+        }
+        
+        easyButton.addEventListener('click', () => {
+            gameDifficulty = 'easy';
+            startGame();
+        });
+
+        moderateButton.addEventListener('click', () => {
+            gameDifficulty = 'moderate';
+            startGame();
+        });
+
+        playAgainButton.addEventListener('click', () => transitionToScreen('start'));
+    </script>
+</body>
+</html>
+
+
+
+
