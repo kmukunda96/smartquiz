@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMART STUDENT - Online Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        body { font-family: 'Roboto', sans-serif; }
+        body {
+            -webkit-user-select: none; /* Safari */
+            -ms-user-select: none; /* IE 10 and IE 11 */
+            user-select: none; /* Standard syntax */
+        }
+        .transition-all {
+            transition: all 0.3s ease-in-out;
+        }
+        /* PC Specific Styling */
+        #quiz-wrapper-pc header,
+        #quiz-wrapper-pc footer {
+            position: sticky;
+            z-index: 10;
+        }
+        #question-content-area-pc {
+            min-height: 100px;
+        }
+        /* Reduce question palette spacing on PC */
+        #question-palette-pc {
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.25rem; /* Reduced gap between buttons */
+        }
+        #question-palette-pc button {
+            width: 2.5rem;
+            height: 2.5rem;
+            font-size: 0.875rem;
+            padding: 0;
+        }
+        #legend-container-pc {
+            gap: 0.5rem;
+        }
+        /* Mobile Specific Styling */
+        #quiz-wrapper-mobile footer {
+            position: sticky;
+            bottom: 0;
+            background-color: white;
+            z-index: 10;
+            border-top: 1px solid #e5e7eb;
+        }
+        #options-area-mobile {
+            margin-bottom: 1rem;
+        }
+        #question-body-mobile {
+            font-size: 1rem;
+        }
+        #options-container-mobile > div {
+            margin-bottom: 0.5rem;
+        }
+        #mobile-palette-container {
+            position: sticky;
+            bottom: 0;
+            background-color: white;
+            z-index: 10;
+            border-top: 1px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col h-screen text-gray-800">
+    <div id="login-page" class="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-blue-500 to-blue-700 p-4">
+        <div class="w-full max-w-md bg-white p-8 rounded-2xl shadow-2xl">
+            <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">SMART STUDENT</h1>
+            <p class="text-center text-gray-500 mb-8">Online Test Portal</p>
+            <form id="login-form">
+                <div class="mb-4">
+                    <label for="user-id" class="block text-sm font-medium text-gray-700 mb-1">User ID</label>
+                    <input type="text" id="user-id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" required>
+                </div>
+                <div class="mb-6">
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" required>
+                </div>
+                <p id="login-error" class="text-red-500 text-sm text-center mb-4 hidden">Invalid User ID or Password.</p>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105">Login</button>
+            </form>
+        </div>
+    </div>
+    <div id="device-selection-page" class="hidden flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+        <div class="w-full max-w-md bg-white p-8 rounded-lg shadow-lg">
+            <h1 class="text-2xl font-bold text-center mb-6">Select Device Type</h1>
+            <p class="text-center text-gray-600 mb-8">Please select whether you're taking the test on a PC or Mobile device.</p>
+            <div class="space-y-4">
+                <button id="device-pc-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg transition-transform transform hover:scale-105 flex items-center justify-center">
+                    <i class="fas fa-desktop mr-3"></i> PC/Laptop
+                </button>
+                <button id="device-mobile-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-lg transition-transform transform hover:scale-105 flex items-center justify-center">
+                    <i class="fas fa-mobile-alt mr-3"></i> Mobile Phone
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="instructions-page" class="hidden flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+        <div class="w-full max-w-4xl bg-white p-8 rounded-lg shadow-lg">
+            <h1 class="text-2xl font-bold text-center mb-6">Instructions</h1>
+            <div class="text-sm text-gray-700 space-y-4 max-h-[70vh] overflow-y-auto pr-4">
+                <ol class="list-decimal list-inside space-y-3">
+                    <li>Total duration of examination is <strong id="total-duration-display">29 minutes</strong>.</li>
+                    <li>The clock will be set at the server. The countdown timer in the top right corner of screen will display the remaining time available for you to complete the examination. When the timer reaches zero, the examination will end by itself. You will not be required to end or submit your examination.</li>
+                    <li>Test contains the following sections:
+                        <table class="w-full my-2 border text-left">
+                            <thead><tr class="bg-gray-100"><th class="p-2 border">SL. No.</th><th class="p-2 border">Name of the Test</th><th class="p-2 border">No. of Questions</th><th class="p-2 border">Marks</th></tr></thead>
+                            <tbody><tr><td class="p-2 border">1</td><td class="p-2 border" id="instruction-test-name">English Test Series 1</td><td class="p-2 border" id="instruction-question-count">32</td><td class="p-2 border" id="instruction-marks">32</td></tr></tbody>
+                        </table>
+                    </li>
+                    <li>Test contains Total <span id="instruction-total-questions">32</span> questions. Each correct answer you will be given   <strong>1 +ve marks</strong> and for each wrong answer you may get <strong>0.25-ve marks</strong>, based on Exam Pattern.</li>
+                    <li>You can use a rough sheet while taking the test.</li>
+                    <li>Do not click the button “Submit” before answering all the questions. A test once submitted cannot be resumed.</li>
+                    <li>The Question Palette displayed on the right side of the screen will show the status of each question using one of the following symbols:
+                        <ul class="list-disc list-inside ml-4 mt-2 space-y-1">
+                            <li><span class="inline-block w-4 h-4 rounded-full bg-gray-300 mr-2 align-middle"></span> You have not visited the question yet.</li>
+                            <li><span class="inline-block w-4 h-4 rounded-full bg-red-500 mr-2 align-middle"></span> You have not answered the question.</li>
+                            <li><span class="inline-block w-4 h-4 rounded-full bg-green-500 mr-2 align-middle"></span> You have answered the question.</li>
+                            <li><span class="inline-block w-4 h-4 rounded-full bg-purple-500 mr-2 align-middle"></span> You have NOT answered the question but have marked it for review.</li>
+                            <li><span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-purple-500 mr-2 align-middle relative"><i class="fas fa-check-circle text-green-300 text-xs absolute -top-1 -right-1"></i></span> The question(s) "Answered and Marked for Review" will be considered for evaluation.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Procedure for answering a multiple-choice type question:</strong>
+                        <ul class="list-disc list-inside ml-4 mt-2 space-y-1">
+                            <li>To select your answer, click on the button of one of the options.</li>
+                            <li>To deselect your chosen answer, click on the <strong>Clear Response</strong> button.</li>
+                            <li>To change your chosen answer, click on the button of another option.</li>
+                            <li>To save your answer, you MUST click on the <strong>Save & Next</strong> button.</li>
+                            <li>To mark the question for review, click on the <strong>Mark for Review & Next</strong> button. If an answer is selected for a question that is Marked for Review, that answer will be considered in the evaluation.</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+            <div class="mt-8 text-center">
+                <button id="start-test-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-transform transform hover:scale-105">Start Test</button>
+            </div>
+        </div>
+    </div>
+    <div id="quiz-wrapper-pc" class="hidden flex-col flex-grow">
+        <header class="bg-[#1E88E5] text-white shadow-md z-20">
+            <div class="container mx-auto px-4 py-2">
+                <div class="md:hidden">
+                    <div class="flex justify-between items-center mb-2">
+                        <h1 id="quiz-title-mobile-pc" class="text-lg font-bold">SMART STUDENT</h1>
+                        <div class="flex items-center gap-2"><span>Time Left:</span><span id="timer-mobile-pc" class="font-bold bg-blue-900/50 px-2 py-1 rounded-md">30:00</span></div>
+                    </div>
+                    <div class="flex items-center justify-start">
+                        <div class="flex items-center gap-1 bg-blue-800/50 p-1 rounded-lg">
+                            <button id="font-decrease-btn-mobile-pc" title="Decrease font size" class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-blue-600">A-</button>
+                            <button id="font-increase-btn-mobile-pc" title="Increase font size" class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-blue-600">A+</button>
+                        </div>
+                        <button id="pause-btn-mobile-pc" title="Pause" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-blue-600 ml-2"><i class="fas fa-pause"></i></button>
+                        <button id="fullscreen-btn-mobile-pc" title="Toggle Fullscreen" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-blue-600 ml-2"><i id="fullscreen-icon-mobile-pc" class="fas fa-expand"></i></button>
+                    </div>
+                </div>
+                <div class="hidden md:flex justify-between items-center">
+                    <h1 id="quiz-title-pc" class="text-lg font-bold">SMART STUDENT - Online Test</h1>
+                    <div class="flex items-center gap-4">
+                        <span>Time Left:</span>
+                        <span id="timer-pc" class="font-bold bg-blue-900/50 px-2 py-1 rounded-md">30:00</span>
+                        <div class="flex items-center gap-1 bg-blue-800/50 p-1 rounded-lg">
+                            <button id="font-decrease-btn-pc" title="Decrease font size" class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-blue-600">A-</button>
+                            <button id="font-increase-btn-pc" title="Increase font size" class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-blue-600">A+</button>
+                        </div>
+                        <button id="pause-btn-pc" title="Pause" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-blue-600"><i class="fas fa-pause"></i></button>
+                        <button id="fullscreen-btn-pc" title="Toggle Fullscreen" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-blue-600"><i id="fullscreen-icon-pc" class="fas fa-expand"></i></button>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <main class="flex-grow container mx-auto p-4 flex flex-col lg:flex-row gap-4 overflow-hidden relative">
+            <div id="question-area-pc" class="w-full lg:w-3/4 flex flex-col gap-4 transition-all">
+                <div id="question-content-area-pc" class="bg-white p-6 rounded-lg shadow-sm flex-grow flex flex-col overflow-hidden">
+                    <div id="question-header-pc" class="border-b pb-4 mb-4 flex justify-between items-center flex-wrap gap-2"></div>
+                    <div id="question-body-pc" class="flex-grow overflow-y-auto pr-2"></div>
+                </div>
+                <div id="options-area-pc" class="bg-white p-6 rounded-lg shadow-sm">
+                     <div id="options-container-pc" class="space-y-2"></div>
+                </div>
+            </div>
+            <aside id="question-palette-container-pc" class="w-full lg:w-1/4 bg-white p-6 rounded-lg shadow-sm transition-all">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">Question Palette</h2>
+                    <button id="hide-palette-btn-pc" class="text-sm text-blue-600 hover:text-blue-800 font-semibold">Hide <i class="fas fa-chevron-right ml-1"></i></button>
+                </div>
+                <div id="legend-container-pc" class="grid grid-cols-2 gap-x-4 gap-y-2 mb-4 text-sm">
+                    <div><span class="inline-block w-4 h-4 rounded-full bg-green-500 mr-2"></span><span id="answered-count-pc">0</span> Answered</div>
+                    <div><span class="inline-block w-4 h-4 rounded-full bg-red-500 mr-2"></span><span id="not-answered-count-pc">1</span> Not Answered</div>
+                    <div><span class="inline-block w-4 h-4 rounded-full bg-gray-300 mr-2"></span><span id="not-visited-count-pc">24</span> Not Visited</div>
+                    <div class="col-span-2"><span class="inline-block w-4 h-4 rounded-full bg-purple-500 mr-2"></span><span id="marked-review-count-pc">0</span> Marked for Review</div>
+                    <div class="col-span-2"><span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-purple-500 mr-2 align-middle relative"><i class="fas fa-check-circle text-green-300 text-xs absolute -top-1 -right-1"></i></span><span id="answered-marked-count-pc">0</span> Answered & Marked</div>
+                </div>
+                <div id="question-palette-pc" class="grid grid-cols-5 sm:grid-cols-6 lg:grid-cols-5 gap-0.5"></div>
+            </aside>
+            <button id="show-palette-btn-pc" class="hidden fixed top-1/2 right-0 transform -translate-y-1/2 bg-blue-600 text-white p-3 rounded-l-lg shadow-lg z-30 hover:bg-blue-700 transition-colors">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+        </main>
+        <footer id="quiz-footer-pc" class="bg-white shadow-[0_-2px_5px_rgba(0,0,0,0.1)] z-20">
+            <div class="container mx-auto px-4 py-3 flex flex-wrap justify-center sm:justify-between items-center gap-2">
+                <div class="flex gap-2">
+                    <button id="mark-review-next-btn-pc" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded">Mark for Review & Next</button>
+                    <button id="clear-response-btn-pc" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">Clear Response</button>
+                </div>
+                <button id="save-next-btn-pc" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded w-full sm:w-auto mt-2 sm:mt-0">Save & Next</button>
+            </div>
+        </footer>
+    </div>
+    <div id="quiz-wrapper-mobile" class="hidden flex-col flex-grow">
+        <header class="bg-[#1E88E5] text-white shadow-md z-20">
+            <div class="container mx-auto px-4 py-2">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-lg font-bold">SMART STUDENT</h1>
+                    <div class="flex items-center gap-2"><span>Time Left:</span><span id="timer-mobile-mobile" class="font-bold bg-blue-900/50 px-2 py-1 rounded-md">30:00</span></div>
+                </div>
+                <div class="flex items-center justify-start mt-2">
+                    <div class="flex items-center gap-1 bg-blue-800/50 p-1 rounded-lg">
+                        <button id="font-decrease-btn-mobile-mobile" title="Decrease font size" class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-blue-600">A-</button>
+                        <button id="font-increase-btn-mobile-mobile" title="Increase font size" class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-blue-600">A+</button>
+                    </div>
+                    <button id="pause-btn-mobile-mobile" title="Pause" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-blue-600 ml-2"><i class="fas fa-pause"></i></button>
+                    <button id="fullscreen-btn-mobile-mobile" title="Toggle Fullscreen" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-blue-600 ml-2"><i id="fullscreen-icon-mobile-mobile" class="fas fa-expand"></i></button>
+                </div>
+            </div>
+        </header>
+        <main class="flex-grow container mx-auto p-4 flex flex-col gap-4 overflow-hidden relative">
+            <div id="question-area-mobile" class="w-full flex flex-col gap-4 transition-all">
+                <div id="question-content-area-mobile" class="bg-white p-4 rounded-lg shadow-sm flex-grow flex flex-col overflow-hidden">
+                    <div id="question-header-mobile" class="border-b pb-2 mb-3 flex justify-between items-center flex-wrap gap-2">
+                        <h2 class="text-base font-semibold">Q: 1 / 32</h2>
+                        <div class="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+                            Time: <span id="question-timer-mobile" class="font-bold text-gray-800">00:00</span>
+                        </div>
+                    </div>
+                    <div id="question-body-mobile" class="flex-grow overflow-y-auto pr-2 text-sm leading-relaxed max-h-[30vh]"></div>
+                </div>
+                <div id="options-area-mobile" class="bg-white p-4 rounded-lg shadow-sm">
+                    <div id="options-container-mobile" class="space-y-2"></div>
+                </div>
+            </div>
+            <div id="mobile-palette-container" class="w-full bg-white p-3 rounded-lg shadow-sm">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-sm font-bold">Questions</h3>
+                    <div class="flex gap-2 text-xs">
+                        <span class="flex items-center"><span class="inline-block w-3 h-3 rounded-full bg-green-500 mr-1"></span><span id="answered-count-mobile">0</span></span>
+                        <span class="flex items-center"><span class="inline-block w-3 h-3 rounded-full bg-red-500 mr-1"></span><span id="not-answered-count-mobile">1</span></span>
+                        <span class="flex items-center"><span class="inline-block w-3 h-3 rounded-full bg-gray-300 mr-1"></span><span id="not-visited-count-mobile">24</span></span>
+                    </div>
+                </div>
+                <div id="question-palette-mobile" class="grid grid-cols-8 gap-1"></div>
+            </div>
+        </main>
+        <footer id="quiz-footer-mobile" class="bg-white shadow-[0_-2px_5px_rgba(0,0,0,0.1)] z-20">
+            <div class="container mx-auto px-4 py-3 flex flex-wrap justify-center gap-2">
+                <button id="mark-review-next-btn-mobile" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-3 rounded text-xs">Mark & Next</button>
+                <button id="clear-response-btn-mobile" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-3 rounded text-xs">Clear</button>
+                <button id="save-next-btn-mobile" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded text-xs w-full sm:w-auto mt-2 sm:mt-0">Save & Next</button>
+            </div>
+        </footer>
+    </div>
+    <div id="pause-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex-col items-center justify-center text-white z-50">
+        <i class="fas fa-pause-circle text-6xl mb-4"></i>
+        <h2 class="text-4xl font-bold mb-8">Test Paused</h2>
+        <button id="resume-btn" class="bg-blue-600 hover:bg-blue-700 font-bold py-3 px-8 rounded-lg text-xl">Resume</button>
+    </div>
+    <div id="submit-confirm-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 items-center justify-center p-4 z-[102]">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Submit Test?</h2>
+            <p class="text-gray-600 mb-8">Are you sure you want to submit the test? This action cannot be undone.</p>
+            <div class="flex justify-center gap-4">
+                <button id="submit-confirm-no-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">No</button>
+                <button id="submit-confirm-yes-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg">Yes, Submit</button>
+            </div>
+        </div>
+    </div>
+    <div id="post-quiz-elements">
+        <div id="post-submit-screen" class="hidden fixed inset-0 bg-gray-100 items-center justify-center p-4 z-[100]">
+            <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Test Saved Successfully!</h2>
+                <p class="text-gray-600 mb-8">What would you like to do next?</p>
+                <div class="flex flex-col gap-4">
+                    <button id="view-results-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg">View Scorecard</button>
+                    <button id="view-time-analysis-btn" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-6 rounded-lg">View Time Analysis</button>
+                    <button id="review-answers-btn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-6 rounded-lg">Review Answers</button>
+                    <button id="exit-test-btn" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg">Exit Test</button>
+                </div>
+            </div>
+        </div>
+        <div id="results-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[101] h-screen">
+            <div id="results-content-wrapper" class="bg-gradient-to-br from-gray-50 to-blue-50 p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-lg border-t-4 border-blue-500 flex flex-col max-h-[90vh]">
+                <div id="results-content" class="overflow-y-auto">
+                    <h2 class="text-3xl font-bold text-gray-800 text-center mb-2">Test Results</h2>
+                    <p class="text-center text-gray-500 mb-6" id="test-date-time"></p>
+                    <div class="space-y-4 text-base sm:text-lg">
+                        <div class="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm">
+                            <span class="font-bold text-gray-700">Final Score:</span>
+                            <span class="font-bold text-blue-700 text-xl" id="final-score">0</span>
+                        </div>
+                        <div class="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm">
+                            <span class="font-semibold text-gray-700">Questions Answered:</span>
+                            <span class="font-bold text-blue-600" id="answered-questions">0</span>
+                        </div>
+                        <div class="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm">
+                            <span class="font-semibold text-gray-700">Correct Answers:</span>
+                            <span class="font-bold text-green-600" id="correct-answers">0</span>
+                        </div>
+                        <div class="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm">
+                            <span class="font-semibold text-gray-700">Wrong Answers:</span>
+                            <span class="font-bold text-red-600" id="wrong-answers">0</span>
+                        </div>
+                        <div class="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm">
+                            <span class="font-semibold text-gray-700">Accuracy:</span>
+                            <span class="font-bold text-blue-700" id="accuracy">0%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-8 flex justify-between items-center pt-4 border-t">
+                    <button id="back-to-options-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Back</button>
+                    <button id="save-results-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg flex items-center gap-2">
+                        <i class="fas fa-download"></i> Download as PNG
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div id="review-page" class="hidden fixed inset-0 bg-gray-100 flex flex-col z-[100] h-screen">
+            <header class="bg-white shadow-md w-full flex-shrink-0">
+                <div class="container mx-auto p-4 flex justify-between items-center">
+                    <h1 class="text-xl font-bold">Review Answers</h1>
+                    <button id="exit-review-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">Exit Review</button>
+                </div>
+            </header>
+            <main id="review-container" class="flex-grow container mx-auto p-4 overflow-y-auto min-h-0"></main>
+        </div>
+        <div id="time-analysis-page" class="hidden fixed inset-0 bg-gray-100 flex flex-col z-[100] h-screen">
+            <header class="bg-white shadow-md w-full flex-shrink-0">
+                <div class="container mx-auto p-4 flex justify-between items-center">
+                    <h1 class="text-xl font-bold">Time Analysis</h1>
+                    <button id="exit-time-analysis-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">Exit Analysis</button>
+                </div>
+            </header>
+            <main id="time-analysis-container" class="flex-grow container mx-auto p-4 overflow-y-auto min-h-0"></main>
+        </div>
+    </div>
+    <div id="fullscreen-warning-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-95 backdrop-blur-xl flex-col items-center justify-center text-white z-[105] text-center p-4">
+        <i class="fas fa-expand text-6xl mb-4 text-red-500"></i>
+        <h2 class="text-4xl font-bold mb-4">Fullscreen Required</h2>
+        <p class="text-lg mb-8">You must be in fullscreen mode to take the test.<br>The test is paused. Please re-enter fullscreen to continue.</p>
+        <button id="re-enter-fullscreen-btn" class="bg-blue-600 hover:bg-blue-700 font-bold py-3 px-8 rounded-lg text-xl">Re-enter Fullscreen</button>
+    </div>
+    <div id="blur-overlay" class="hidden fixed inset-0 bg-black bg-opacity-95 backdrop-blur-xl z-40"></div>
+    <script>
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) || (e.ctrlKey && ['U', 'S', 'C', 'X'].includes(e.key.toUpperCase()))) {
+                e.preventDefault();
+            }
+        });
+        const quizData = [
+            {
+                type: 'group',
+                groupText: "In the following questions, five statements are given, among which one of the statements is grammatically incorrect. Choose the incorrect statement and mark it as your answer.",
+                subQuestions: [
+                    { id: 1, text: "A) Had I known about the meeting, I would have attended it.<br>B) No sooner had she arrived than the lights went out.<br>C) She is believed to have stolen the documents.<br>D) Despite of having all the qualifications, he wasn't selected.<br>E) It is high time we changed the approach.", options: ["A", "B", "C", "D", "E"], answer: "D" },
+                    { id: 2, text: "A) Not only did he win the competition, but he also broke the record.<br>B) She prefers reading to watching TV.<br>C) Scarcely had they left then the guests arrived.<br>D) She acted as though she were the boss.<br>E) So intense was the heat that the match had to be cancelled.", options: ["A", "B", "C", "D", "E"], answer: "C" },
+                    { id: 3, text: "A) By the time we arrived, the train had already left.<br>B) He insisted that she be present.<br>C) Little did they realise the danger ahead.<br>D) The more you practice, the more better you perform.<br>E) Were I in your place, I would resign.", options: ["A", "B", "C", "D", "E"], answer: "D" },
+                    { id: 4, text: "A) Only after the investigation the truth did come out.<br>B) Not until she apologised did he forgive her.<br>C) Each of the students has submitted his or her assignment.<br>D) Neither of the options is viable.<br>E) Had it not been for your help, I would have failed.", options: ["A", "B", "C", "D", "E"], answer: "A" },
+                    { id: 5, text: "A) Were they to cancel the event, we'd be informed.<br>B) The manager, along with his team members, are arriving soon.<br>C) He talks as if he knew everything.<br>D) Seldom do we witness such bravery.<br>E) The book was so boring that I couldn't finish it.", options: ["A", "B", "C", "D", "E"], answer: "B" },
+                ]
+            },
+            {
+                type: 'group',
+                groupText: "The following passage has five blanks in it which are represented by letters. Along with each blank, a word is given in bold. These highlighted words may/may not fit in the blank to make the passage meaningful. From the given options, choose the most appropriate words that replace the highlighted words. If no replacement is required, choose option E.<br><br><b>Passage:</b> India's exports <b>(A) ameliorated</b> by about 16.7% in October compared to the same month last year. This is the first fall in monthly exports since February 2021. On the other hand, imports grew at a slower pace, mainly due to softening global commodity prices. As a result, the trade deficit widened by nearly 50%. Engineering goods, a key part of India's export sector, fell by 21%. Experts say this is due to weak demand in global markets, high inflation, and geopolitical issues like the Russia-Ukraine war. A major drop was seen in steel exports, partly because the government had earlier imposed an export duty. That duty has now been removed. The Commerce Ministry has also said that output tends to fall in the Diwali season as workers take time off, so it is too early to say if the export dip is a <b>(B) departing</b> or a long-term concern. Meanwhile, countries like Vietnam and the Philippines reported growth in exports, thanks to strong global demand. In contrast, China saw a <b>(C) recklessness</b> in exports due to strict lockdowns. India's Finance Ministry has said that despite weak exports, <b>(D) imported</b> demand remains strong. It also expects private investment to rise, and credit growth has been <b>(E) disappointing</b>, showing some positive signs for the economy.",
+                subQuestions: [
+                    { id: 6, text: "Which of the following words will replace WORD A?", options: ["appeased", "declined", "escalated", "augmented", "No replacement is required"], answer: "B" },
+                    { id: 7, text: "Which of the following words will replace WORD B?", options: ["historic", "intentional", "permanent", "temporary", "No replacement is required"], answer: "D" },
+                    { id: 8, text: "Which of the following words will replace WORD C?", options: ["decline", "boost", "explosion", "negligence", "No replacement is required"], answer: "A" },
+                    { id: 9, text: "Which of the following words will replace WORD D?", options: ["international", "foreign", "global", "domestic", "No replacement is required"], answer: "D" },
+                    { id: 10, text: "Which of the following words will replace WORD E?", options: ["weak", "sluggish", "robust", "deviating", "No replacement is required"], answer: "C" },
+                ]
+            },
+            {
+                type: 'group',
+                groupText: "In the following questions, a sentence is given with four highlighted words in it. One of these highlighted words may either be wrongly spelt or inappropriately used. Find out the incorrect word and mark it as your answer. If all words are correctly used, choose option E.",
+                subQuestions: [
+                    { id: 11, text: "India is leveraging AI-driven, satellite-based, and spatial analytics to map, mitigate, and anticipate urban heat <b>vulnerbility</b> down to the granular building level.", options: ["Leveraging", "Mitigate", "Anticipate", "Vulnerbility", "All are correct"], answer: "D" },
+                    { id: 12, text: "The pioneering and variable-speed 250 MW pumped storage facility at Tehri has commenced commercial operations, enhancing grid stability, <b>inability</b>, and responsiveness.", options: ["Commenced", "Enhancing", "inability", "Responsiveness", "All are correct"], answer: "C" },
+                    { id: 13, text: "IIT-Delhi's outreach, interactive, and demystifying ‘Jigyasa' <b>intiative</b> aims to inspire, educate, and engage young minds through practical STEM demonstrations.", options: ["Interactive", "Intiative", "Inspire", "Demonstrations", "All are correct"], answer: "B" },
+                    { id: 14, text: "The Department of Telecommunications has licensed, validated, and <b>authorises</b> Starlink to deliver broadband, low-latency, and satellite-based internet services across India.", options: ["Licensed", "Validated", "Authorises", "Low-latency", "All are correct"], answer: "C" },
+                    { id: 15, text: "The Aravalli Green Wall project is a strategic, restorative, and biodiverse afforestation campaign aiming to combat, rehabilitate, and safeguard degraded landscapes.", options: ["Afforestation", "Rehabilitate", "Degraded", "Restorative", "All are correct"], answer: "E" },
+                ]
+            },
+            {
+                type: 'group',
+                groupText: "In the following questions, three sentences are given in which a phrasal verb has been highlighted. The highlighted phrasal verb may or may not be appropriate in the given sentence. Find out the incorrect usage and mark it as your answer. If all sentences are incorrect, choose option E.",
+                subQuestions: [
+                    { id: 16, text: "I) The manager <b>called off</b> the meeting due to a scheduling conflict.<br>II) She <b>looked after</b> her younger brother while their parents were away.<br>III) The firemen <b>put up</b> the fire before it spread to nearby houses.", options: ["Only I", "Only III", "Only II", "Both I and III", "All are incorrect"], answer: "B" },
+                    { id: 17, text: "I) He <b>ran around</b> his old college friend at the railway station yesterday.<br>II) We need to <b>figure out</b> a way to reduce expenses this month.<br>III) She <b>turned down</b> the volume so that everyone could hear the announcement.", options: ["Only I", "Only II", "Only III", "Both I and II", "All are incorrect"], answer: "A" },
+                    { id: 18, text: "I) She <b>came across</b> an interesting article while browsing the newspaper.<br>II) He <b>gave in</b> the documents to the HR department yesterday.<br>III) They <b>carried out</b> the plan exactly as discussed.", options: ["Only I", "Only III", "Only II", "Both I and III", "All are incorrect"], answer: "C" },
+                    { id: 19, text: "I) The teacher <b>pointed off</b> several errors in my essay.<br>II) We <b>called off</b> the hotel to confirm our reservation.<br>III) He <b>broke down</b> the proposal to avoid implementing it.", options: ["Only I", "Only II", "Only III", "All are correct", "All are incorrect"], answer: "E" },
+                    { id: 20, text: "I) She <b>looked up</b> the meaning of the word in the dictionary.<br>II) They <b>set off</b> early in the morning to avoid traffic.<br>III) The company is trying to <b>cut down</b> on unnecessary expenses this quarter.", options: ["Only I", "Only II", "Only III", "All are correct", "All are incorrect"], answer: "D" },
+                ]
+            },
+            {
+                type: 'group',
+                groupText: "<b>Passage for Questions 21 to 27:</b><br>The Reserve Bank of India (RBI) has recently launched the digital rupee (also known as the e-rupee) on a pilot basis. Initially, this digital currency will be made available through a select group of public and private sector banks in a few major cities. The digital rupee can be used for both person-to-person and person-to-merchant transactions.<br>The digital rupee is a central bank digital currency (CBDC) issued and regulated by the RBI. It is similar to physical cash, but it exists in electronic form and is stored in a digital wallet. Like physical currency, the digital rupee is also legal tender, meaning it must be accepted as a form of payment. However, it differs from regular bank deposits. Unlike bank savings, digital rupee balances do not earn interest. Users can convert their bank deposits into digital rupees and vice versa.<br>There are several benefits to introducing the digital rupee. First, it may reduce the cost and effort involved in printing and managing physical cash. Second, digital currency transactions are easier to track and verify, which helps improve transparency. Lastly, it offers a safer and more efficient payment method that supports the country's move towards a digital economy.<br>However, the digital rupee also presents certain impediments. Some experts have expressed reservations about its impact on the traditional banking system. If more people shift their money from bank deposits to digital rupees—especially when interest rates are low—banks may have less cash to lend. This could reduce their lending capacity, affecting credit availability in the economy.<br>Despite these concerns, the digital rupee is expected to play a key role in promoting financial innovation and improving the efficiency of payment systems. As the pilot project progresses, the RBI will closely monitor its impact and make necessary adjustments before expanding it further.",
+                subQuestions: [
+                    { id: 21, text: "According to the passage, which of the following is true about the digital rupee?", options: ["It is issued by private banks under RBI supervision", "It can be stored in a digital wallet regulated by the RBI", "It earns regular interest like bank deposits", "It can only be used for business-to-business transactions", "It is a cryptocurrency not recognised by the government"], answer: "B" },
+                    { id: 22, text: "Which of the following could be a potential risk of increased use of the digital rupee, as suggested in the passage?", options: ["Increased dependency on foreign digital payment systems", "Reduced availability of funds for banks to issue loans", "Higher production costs for physical currency", "Rapid inflation due to excess liquidity", "Loss of interest income by central banks"], answer: "B" },
+                    { id: 23, text: "What does the word 'pilot' mean in the phrase 'launched the digital rupee on a pilot basis'?", options: ["To operate an aircraft", "A chief engineer", "On an experimental or trial basis", "A permanent nationwide roll-out", "A top-level financial policy"], answer: "C" },
+                    { id: 24, text: "Why does the passage mention that the digital rupee is legal tender?", options: ["To clarify that it must be accepted for all forms of payment", "To show that it can be used in international transactions", "To emphasize that it cannot be exchanged for physical cash", "To explain how it helps earn interest like savings accounts", "None of these"], answer: "A" },
+                    { id: 25, text: "What is the main objective of the passage?", options: ["To highlight the history of digital currencies globally", "To compare the Indian banking system with global banks", "To criticize the RBI's decision to launch the digital rupee", "To introduce the concept, benefits, and concerns of the digital rupee.", "To explain how cryptocurrencies affect the Indian economy"], answer: "D" },
+                    { id: 26, text: "Which of the following is the SYNONYM of the given word ‘IMPEDIMENTS' as used in the passage?", options: ["Advantages", "Opportunities", "Obstacles", "Incentives", "Outcomes"], answer: "C" },
+                    { id: 27, text: "Which of the following is the ANTONYM of the given word ‘RESERVATIONS' as used in the passage?", options: ["Doubts", "Apprehensions", "Hesitation", "Misgivings", "Clarity"], answer: "E" },
+                ]
+            },
+            {
+                type: 'group',
+                groupText: "In the following questions, five sentences are given in jumbled form. These sentences, when arranged in a proper sequence, form a coherent passage. Rearrange the jumbled sentences in order to form a coherent passage and answer the questions that follow.<br><br>A) Experts warned that without urgent action, the structure could pose serious safety risks.<br>B) Regular maintenance was carried out, but signs of wear and tear gradually increased.<br>C) After a detailed inspection, the authorities decided to close it temporarily for repairs.<br>D) The city's main bridge was built over 50 years ago using traditional construction methods.<br>E) Over time, small cracks began to appear, raising concerns among engineers.",
+                subQuestions: [
+                    { id: 28, text: "Which of the following will be the introductory sentence after the rearrangement?", options: ["A", "B", "C", "D", "E"], answer: "D" },
+                    { id: 29, text: "Which of the following will be the third sentence after the rearrangement?", options: ["A", "B", "C", "D", "E"], answer: "E" },
+                    { id: 30, text: "Which of the following will be the fourth sentence after the rearrangement?", options: ["A", "B", "C", "D", "E"], answer: "A" },
+                    { id: 31, text: "Which of the following will be the concluding sentence after the rearrangement?", options: ["A", "B", "C", "D", "E"], answer: "C" },
+                    { id: 32, text: "Which of the following will be the correct sequence after the rearrangement?", options: ["BADCE", "DBEAC", "BAEDC", "DCBAE", "ADEBC"], answer: "B" },
+                ]
+            },
+        ];
+        let allQuestions = [];
+        let currentQuestionIndex = 0;
+        let selectedAnswers, markedForReview, questionsSeen, questionTimeSpent;
+        let totalQuestions = 0;
+        let totalDurationMinutes = 0;
+        let totalTimeInSeconds = 0;
+        let timer = 0;
+        let timerInterval;
+        let baseFontSize = 14;
+        let testResults = {};
+        let currentQuestionTimer = 0;
+        let questionTimerInterval;
+        let deviceType = ''; // Global variable to store device type
+        // PC Elements
+        const loginPage = document.getElementById('login-page');
+        const deviceSelectionPage = document.getElementById('device-selection-page');
+        const instructionsPage = document.getElementById('instructions-page');
+        const quizWrapperPc = document.getElementById('quiz-wrapper-pc');
+        const quizWrapperMobile = document.getElementById('quiz-wrapper-mobile');
+        const loginForm = document.getElementById('login-form');
+        const startTestBtn = document.getElementById('start-test-btn');
+        const optionsContainerPc = document.getElementById('options-container-pc');
+        const timerDisplayPc = document.getElementById('timer-pc');
+        const timerMobileDisplayPc = document.getElementById('timer-mobile-pc');
+        const pauseBtnPc = document.getElementById('pause-btn-pc');
+        const pauseMobileBtnPc = document.getElementById('pause-btn-mobile-pc');
+        const pauseModal = document.getElementById('pause-modal');
+        const resumeBtn = document.getElementById('resume-btn');
+        const markReviewNextBtnPc = document.getElementById('mark-review-next-btn-pc');
+        const clearResponseBtnPc = document.getElementById('clear-response-btn-pc');
+        const saveNextBtnPc = document.getElementById('save-next-btn-pc');
+        const submitConfirmModal = document.getElementById('submit-confirm-modal');
+        const submitConfirmYesBtn = document.getElementById('submit-confirm-yes-btn');
+        const submitConfirmNoBtn = document.getElementById('submit-confirm-no-btn');
+        const postSubmitScreen = document.getElementById('post-submit-screen');
+        const viewResultsBtn = document.getElementById('view-results-btn');
+        const reviewAnswersBtn = document.getElementById('review-answers-btn');
+        const resultsModal = document.getElementById('results-modal');
+        const saveResultsBtn = document.getElementById('save-results-btn');
+        const backToOptionsBtn = document.getElementById('back-to-options-btn');
+        const fullscreenBtnPc = document.getElementById('fullscreen-btn-pc');
+        const fullscreenIconPc = document.getElementById('fullscreen-icon-pc');
+        const fullscreenMobileBtnPc = document.getElementById('fullscreen-btn-mobile-pc');
+        const fullscreenMobileIconPc = document.getElementById('fullscreen-icon-mobile-pc');
+        const fontIncreaseBtnPc = document.getElementById('font-increase-btn-pc');
+        const fontDecreaseBtnPc = document.getElementById('font-decrease-btn-pc');
+        const fontIncreaseMobileBtnPc = document.getElementById('font-increase-btn-mobile-pc');
+        const fontDecreaseMobileBtnPc = document.getElementById('font-decrease-btn-mobile-pc');
+        const reviewPage = document.getElementById('review-page');
+        const exitReviewBtn = document.getElementById('exit-review-btn');
+        const exitTestBtn = document.getElementById('exit-test-btn');
+        const questionPaletteContainerPc = document.getElementById('question-palette-container-pc');
+        const hidePaletteBtnPc = document.getElementById('hide-palette-btn-pc');
+        const showPaletteBtnPc = document.getElementById('show-palette-btn-pc');
+        const questionAreaPc = document.getElementById('question-area-pc');
+        const viewTimeAnalysisBtn = document.getElementById('view-time-analysis-btn');
+        const timeAnalysisPage = document.getElementById('time-analysis-page');
+        const exitTimeAnalysisBtn = document.getElementById('exit-time-analysis-btn');
+        const questionHeaderPc = document.getElementById('question-header-pc');
+        const questionBodyPc = document.getElementById('question-body-pc');
+        const optionsAreaPc = document.getElementById('options-area-pc');
+        const blurOverlay = document.getElementById('blur-overlay');
+        const fullscreenWarningModal = document.getElementById('fullscreen-warning-modal');
+        const reEnterFullscreenBtn = document.getElementById('re-enter-fullscreen-btn');
+        // Mobile Elements
+        const optionsContainerMobile = document.getElementById('options-container-mobile');
+        const timerMobileDisplayMobile = document.getElementById('timer-mobile-mobile');
+        const pauseMobileBtnMobile = document.getElementById('pause-btn-mobile-mobile');
+        const fullscreenMobileBtnMobile = document.getElementById('fullscreen-btn-mobile-mobile');
+        const fullscreenMobileIconMobile = document.getElementById('fullscreen-icon-mobile-mobile');
+        const fontIncreaseMobileBtnMobile = document.getElementById('font-increase-btn-mobile-mobile');
+        const fontDecreaseMobileBtnMobile = document.getElementById('font-decrease-btn-mobile-mobile');
+        const markReviewNextBtnMobile = document.getElementById('mark-review-next-btn-mobile');
+        const clearResponseBtnMobile = document.getElementById('clear-response-btn-mobile');
+        const saveNextBtnMobile = document.getElementById('save-next-btn-mobile');
+        const questionHeaderMobile = document.getElementById('question-header-mobile');
+        const questionBodyMobile = document.getElementById('question-body-mobile');
+        const optionsAreaMobile = document.getElementById('options-area-mobile');
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const secs = (seconds % 60).toString().padStart(2, '0');
+            return `${mins}:${secs}`;
+        }
+        function pauseTimers() {
+            clearInterval(timerInterval);
+            clearInterval(questionTimerInterval);
+        }
+        function resumeTimers() {
+            startTimer();
+            startQuestionTimer();
+        }
+        function startQuestionTimer() {
+            clearInterval(questionTimerInterval);
+            currentQuestionTimer = 0; 
+            const timerEl = document.getElementById('question-timer');
+            if (timerEl) {
+                timerEl.textContent = formatTime(questionTimeSpent[currentQuestionIndex]);
+            }
+            const timerElMobile = document.getElementById('question-timer-mobile');
+            if (timerElMobile) {
+                timerElMobile.textContent = formatTime(questionTimeSpent[currentQuestionIndex]);
+            }
+            questionTimerInterval = setInterval(() => {
+                currentQuestionTimer++; 
+                if (timerEl) {
+                    const totalTimeForQuestion = questionTimeSpent[currentQuestionIndex] + currentQuestionTimer;
+                    timerEl.textContent = formatTime(totalTimeForQuestion);
+                }
+                if (timerElMobile) {
+                    const totalTimeForQuestion = questionTimeSpent[currentQuestionIndex] + currentQuestionTimer;
+                    timerElMobile.textContent = formatTime(totalTimeForQuestion);
+                }
+            }, 1000);
+        }
+        function stopAndRecordTimer() {
+            clearInterval(questionTimerInterval);
+            if(questionTimeSpent && currentQuestionIndex < questionTimeSpent.length) {
+                questionTimeSpent[currentQuestionIndex] += currentQuestionTimer;
+            }
+        }
+        function updateLegendCounts() {
+            let answered = 0, notAnswered = 0, marked = 0, notVisited = 0, answeredMarked = 0;
+            for (let i = 0; i < allQuestions.length; i++) {
+                const isAnswered = selectedAnswers[i] !== null;
+                const isMarked = markedForReview[i];
+                if (isAnswered && isMarked) { answeredMarked++; }
+                else if (isMarked) { marked++; }
+                if (isAnswered) { answered++; }
+                else if (questionsSeen[i]) { notAnswered++; }
+                else { notVisited++; }
+            }
+            document.getElementById('answered-count-pc').textContent = answered;
+            document.getElementById('not-answered-count-pc').textContent = notAnswered;
+            document.getElementById('marked-review-count-pc').textContent = marked;
+            document.getElementById('not-visited-count-pc').textContent = notVisited;
+            document.getElementById('answered-marked-count-pc').textContent = answeredMarked;
+            // Update mobile legend counts
+            document.getElementById('answered-count-mobile').textContent = answered;
+            document.getElementById('not-answered-count-mobile').textContent = notAnswered;
+            document.getElementById('not-visited-count-mobile').textContent = notVisited;
+        }
+        function initQuestionPalettePc() {
+            const questionPalette = document.getElementById('question-palette-pc');
+            questionPalette.innerHTML = '';
+            allQuestions.forEach((q, index) => {
+                const button = document.createElement('button');
+                let stateClasses = '';
+                const isAnswered = selectedAnswers[index] !== null;
+                const isMarked = markedForReview[index];
+                if (isAnswered && isMarked) {
+                    stateClasses = 'bg-purple-500 text-white relative';
+                    button.innerHTML = `${index + 1}<i class="fas fa-check-circle text-green-300 text-xs absolute -bottom-1 -right-1"></i>`;
+                } else if (isMarked) {
+                    stateClasses = 'bg-purple-500 text-white'; button.textContent = index + 1;
+                } else if (isAnswered) {
+                    stateClasses = 'bg-green-500 text-white'; button.textContent = index + 1;
+                } else if (questionsSeen[index]) {
+                    stateClasses = 'bg-red-500 text-white'; button.textContent = index + 1;
+                } else {
+                    stateClasses = 'bg-gray-300 text-gray-800'; button.textContent = index + 1;
+                }
+                button.className = `w-10 h-10 text-sm font-medium rounded transition-all duration-200 ${stateClasses}`;
+                if (index === currentQuestionIndex) button.classList.add('ring-2', 'ring-offset-2', 'ring-blue-500');
+                button.onclick = () => { goToQuestion(index); };
+                questionPalette.appendChild(button);
+            });
+            updateLegendCounts();
+        }
+        function initQuestionPaletteMobile() {
+            const questionPaletteMobile = document.getElementById('question-palette-mobile');
+            questionPaletteMobile.innerHTML = '';
+            allQuestions.forEach((q, index) => {
+                const button = document.createElement('button');
+                let stateClasses = '';
+                const isAnswered = selectedAnswers[index] !== null;
+                const isMarked = markedForReview[index];
+                if (isAnswered && isMarked) {
+                    stateClasses = 'bg-purple-500 text-white relative';
+                    button.innerHTML = `<i class="fas fa-check-circle text-green-300 text-xs absolute -top-1 -right-1"></i>`;
+                } else if (isMarked) {
+                    stateClasses = 'bg-purple-500 text-white'; 
+                } else if (isAnswered) {
+                    stateClasses = 'bg-green-500 text-white'; 
+                } else if (questionsSeen[index]) {
+                    stateClasses = 'bg-red-500 text-white'; 
+                } else {
+                    stateClasses = 'bg-gray-300 text-gray-800'; 
+                }
+                button.className = `w-8 h-8 text-xs font-medium rounded transition-all duration-200 ${stateClasses}`;
+                if (index === currentQuestionIndex) button.classList.add('ring-2', 'ring-offset-2', 'ring-blue-500');
+                button.textContent = index + 1;
+                button.onclick = () => { goToQuestion(index); };
+                questionPaletteMobile.appendChild(button);
+            });
+            updateLegendCounts();
+        }
+        function updateQuestionPc() {
+            const q = allQuestions[currentQuestionIndex];
+            questionHeaderPc.innerHTML = `
+                <h2 class="text-lg font-semibold">Q: ${currentQuestionIndex + 1} / ${allQuestions.length}</h2>
+                <div class="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+                    Time on this question: <span id="question-timer" class="font-bold text-gray-800">00:00</span>
+                </div>
+            `;
+            if (q.isGrouped) {
+                questionBodyPc.innerHTML = `
+                    <div class="flex flex-col md:flex-row gap-6 h-full">
+                        <div class="question-text-resizable md:w-2/3 leading-relaxed border-r md:pr-4">${q.groupText}</div>
+                        <div class="question-text-resizable md:w-1/3 font-semibold">${q.text}</div>
+                    </div>
+                `;
+            } else {
+                questionBodyPc.innerHTML = `<p class="question-text-resizable leading-relaxed">${q.text}</p>`;
+            }
+            optionsContainerPc.innerHTML = '';
+            q.options.forEach((option, index) => {
+                const letter = String.fromCharCode(65 + index);
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex items-center p-3 border rounded-lg cursor-pointer transition-colors';
+                const input = document.createElement('input');
+                input.type = 'radio'; input.name = 'options';
+                input.className = 'w-4 h-4 text-blue-600'; input.value = letter;
+                if (selectedAnswers[currentQuestionIndex] === letter) {
+                    input.checked = true; wrapper.classList.add('bg-blue-50', 'border-blue-500');
+                }
+                const label = document.createElement('label');
+                label.innerHTML = option;
+                label.className = 'ml-3 w-full font-medium text-gray-900';
+                wrapper.appendChild(input);
+                wrapper.appendChild(label);
+                wrapper.onclick = () => { input.checked = true; selectedAnswers[currentQuestionIndex] = letter; updateQuestionPc(); };
+                optionsContainerPc.appendChild(wrapper);
+            });
+            initQuestionPalettePc();
+            saveNextBtnPc.textContent = (currentQuestionIndex === allQuestions.length - 1) ? 'Submit' : 'Save & Next';
+            applyFontSizing();
+        }
+        function updateQuestionMobile() {
+            const q = allQuestions[currentQuestionIndex];
+            questionHeaderMobile.innerHTML = `
+                <h2 class="text-base font-semibold">Q: ${currentQuestionIndex + 1} / ${allQuestions.length}</h2>
+                <div class="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+                    Time: <span id="question-timer-mobile" class="font-bold text-gray-800">00:00</span>
+                </div>
+            `;
+            if (q.isGrouped) {
+                questionBodyMobile.innerHTML = `
+                    <div class="flex flex-col gap-4 h-full">
+                        <div class="question-text-resizable leading-relaxed">${q.groupText}</div>
+                        <div class="question-text-resizable font-semibold">${q.text}</div>
+                    </div>
+                `;
+            } else {
+                questionBodyMobile.innerHTML = `<p class="question-text-resizable leading-relaxed text-sm">${q.text}</p>`;
+            }
+            optionsContainerMobile.innerHTML = '';
+            q.options.forEach((option, index) => {
+                const letter = String.fromCharCode(65 + index);
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex items-center p-2 border rounded-lg cursor-pointer transition-colors';
+                const input = document.createElement('input');
+                input.type = 'radio'; input.name = 'options';
+                input.className = 'w-4 h-4 text-blue-600'; input.value = letter;
+                if (selectedAnswers[currentQuestionIndex] === letter) {
+                    input.checked = true; wrapper.classList.add('bg-blue-50', 'border-blue-500');
+                }
+                const label = document.createElement('label');
+                label.innerHTML = option;
+                label.className = 'ml-2 w-full font-medium text-gray-900 text-sm';
+                wrapper.appendChild(input);
+                wrapper.appendChild(label);
+                wrapper.onclick = () => { input.checked = true; selectedAnswers[currentQuestionIndex] = letter; updateQuestionMobile(); };
+                optionsContainerMobile.appendChild(wrapper);
+            });
+            initQuestionPaletteMobile();
+            saveNextBtnMobile.textContent = (currentQuestionIndex === allQuestions.length - 1) ? 'Submit' : 'Save & Next';
+            applyFontSizing();
+        }
+        function goToQuestion(index) {
+            if (index < 0 || index >= allQuestions.length) return;
+            stopAndRecordTimer();
+            questionsSeen[index] = true;
+            currentQuestionIndex = index;
+            if (deviceType === 'pc') {
+                updateQuestionPc();
+            } else {
+                updateQuestionMobile();
+            }
+            startQuestionTimer();
+        }
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timer--;
+                const timeString = formatTime(timer);
+                // Update the correct timer based on device type
+                if (deviceType === 'pc') {
+                    if (timerDisplayPc) {
+                        timerDisplayPc.textContent = timeString;
+                    }
+                    if (timerMobileDisplayPc) {
+                        timerMobileDisplayPc.textContent = timeString;
+                    }
+                } else { // mobile
+                    if (timerMobileDisplayMobile) {
+                        timerMobileDisplayMobile.textContent = timeString;
+                    }
+                }
+                if (timer <= 0) evaluateAndEndTest();
+            }, 1000);
+        }
+        function evaluateAndEndTest() {
+            clearInterval(timerInterval);
+            stopAndRecordTimer();
+            let correct = 0, answered = 0;
+            const wrongQuestions = [], unansweredQuestions = [];
+            allQuestions.forEach((q, index) => {
+                const selected = selectedAnswers[index];
+                if (selected !== null) {
+                    answered++;
+                    if (selected === q.answer) correct++;
+                    else wrongQuestions.push({ question: q, correctAnswer: q.answer, index: index });
+                } else {
+                    unansweredQuestions.push({ question: q, correctAnswer: q.answer, index: index });
+                }
+            });
+            const wrong = answered - correct;
+            const accuracy = answered > 0 ? ((correct / answered) * 100).toFixed(2) : 0;
+            const finalScore = (correct * 1 - wrong * 0.25).toFixed(2);
+            testResults = { correct, answered, wrong, accuracy, finalScore, wrongQuestions, unansweredQuestions };
+            if (deviceType === 'pc') {
+                quizWrapperPc.classList.add('hidden');
+            } else {
+                quizWrapperMobile.classList.add('hidden');
+            }
+            postSubmitScreen.classList.remove('hidden');
+            postSubmitScreen.classList.add('flex');
+        }
+        function showResults() {
+            const testDateTime = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'full', timeStyle: 'short' });
+            document.getElementById('final-score').textContent = testResults.finalScore;
+            document.getElementById('answered-questions').textContent = testResults.answered;
+            document.getElementById('correct-answers').textContent = testResults.correct;
+            document.getElementById('wrong-answers').textContent = testResults.wrong;
+            document.getElementById('accuracy').textContent = `${testResults.accuracy}%`;
+            document.getElementById('test-date-time').textContent = `Completed on: ${testDateTime}`;
+            if (deviceType === 'pc') {
+                postSubmitScreen.classList.add('hidden');
+            } else {
+                postSubmitScreen.classList.add('hidden');
+            }
+            resultsModal.classList.remove('hidden');
+            resultsModal.classList.add('flex');
+        }
+        function getOptionTextFromLetter(question, letter) {
+            const index = letter.charCodeAt(0) - 65;
+            return question.options[index];
+        }
+        function populateReviewPage() {
+            const container = document.getElementById('review-container');
+            container.innerHTML = '';
+            if (testResults.wrongQuestions.length > 0) {
+                container.innerHTML += `<h2 class="text-xl font-bold text-red-600 mb-4">Incorrect Answers</h2>`;
+                testResults.wrongQuestions.forEach(item => {
+                    const timeSpent = formatTime(questionTimeSpent[item.index]);
+                    container.innerHTML += `<div class="p-4 bg-red-50 border border-red-200 rounded-lg mb-4">
+                        <div class="flex justify-between items-start mb-2"><p class="font-bold text-gray-800">Q${item.index+1}: ${item.question.text}</p><span class="text-xs flex-shrink-0 font-bold text-red-700 bg-red-200 px-2 py-1 rounded-full ml-2">INCORRECT</span></div>
+                        <p class="text-green-600 font-semibold">Correct Answer: ${getOptionTextFromLetter(item.question, item.correctAnswer)}</p>
+                        <p class="text-sm text-gray-500 mt-2 font-semibold">Time Spent: ${timeSpent}</p>
+                    </div>`;
+                });
+            }
+            if (testResults.unansweredQuestions.length > 0) {
+                 container.innerHTML += `<h2 class="text-xl font-bold text-gray-700 mt-6 mb-4">Unanswered Questions</h2>`;
+                testResults.unansweredQuestions.forEach(item => {
+                    const timeSpent = formatTime(questionTimeSpent[item.index]);
+                    container.innerHTML += `<div class="p-4 bg-gray-100 border border-gray-200 rounded-lg mb-4">
+                        <div class="flex justify-between items-start mb-2"><p class="font-bold text-gray-800">Q${item.index+1}: ${item.question.text}</p><span class="text-xs flex-shrink-0 font-bold text-gray-600 bg-gray-200 px-2 py-1 rounded-full ml-2">UNANSWERED</span></div>
+                        <p class="text-green-600 font-semibold">Correct Answer: ${getOptionTextFromLetter(item.question, item.correctAnswer)}</p>
+                        <p class="text-sm text-gray-500 mt-2 font-semibold">Time Spent: ${timeSpent}</p>
+                    </div>`;
+                });
+            }
+            postSubmitScreen.classList.add('hidden');
+            reviewPage.classList.remove('hidden');
+        }
+        function populateTimeAnalysisPage() {
+            const container = document.getElementById('time-analysis-container');
+            container.innerHTML = `<div class="bg-white p-6 rounded-lg shadow-md"><table class="w-full text-left"><thead><tr class="bg-gray-100 border-b"><th class="p-3 font-semibold">Q. No.</th><th class="p-3 font-semibold">Question</th><th class="p-3 font-semibold">Time Spent</th></tr></thead><tbody>
+                ${allQuestions.map((q, index) => `<tr class="border-b hover:bg-gray-50"><td class="p-3 font-medium">${index + 1}</td><td class="p-3 text-gray-700">${q.text}</td><td class="p-3 font-bold text-blue-600 whitespace-nowrap">${formatTime(questionTimeSpent[index])}</td></tr>`).join('')}
+            </tbody></table></div>`;
+            postSubmitScreen.classList.add('hidden');
+            timeAnalysisPage.classList.remove('hidden');
+        }
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (document.getElementById('user-id').value === 'IMSMARTone' && document.getElementById('password').value === 'IWILLDOIT@2025') {
+                fullscreenAction();
+                document.getElementById('total-duration-display').textContent = `${totalDurationMinutes} minutes`;
+                loginPage.classList.add('hidden');
+                deviceSelectionPage.classList.remove('hidden');
+                deviceSelectionPage.classList.add('flex');
+            } else { 
+                document.getElementById('login-error').classList.remove('hidden'); 
+            }
+        });
+        document.getElementById('device-pc-btn').addEventListener('click', () => {
+            deviceType = 'pc'; // Set device type to pc
+            deviceSelectionPage.classList.add('hidden');
+            instructionsPage.classList.remove('hidden');
+            instructionsPage.classList.add('flex');
+        });
+        document.getElementById('device-mobile-btn').addEventListener('click', () => {
+            deviceType = 'mobile'; // Set device type to mobile
+            deviceSelectionPage.classList.add('hidden');
+            instructionsPage.classList.remove('hidden');
+            instructionsPage.classList.add('flex');
+        });
+        startTestBtn.addEventListener('click', () => { 
+            instructionsPage.classList.add('hidden'); 
+            if (deviceType === 'pc') {
+                quizWrapperPc.classList.remove('hidden'); 
+                quizWrapperPc.classList.add('flex'); 
+                initQuiz();
+            } else {
+                quizWrapperMobile.classList.remove('hidden'); 
+                quizWrapperMobile.classList.add('flex'); 
+                initQuiz();
+            }
+        });
+        saveNextBtnPc.addEventListener('click', () => { 
+            if (currentQuestionIndex === allQuestions.length - 1) { 
+                submitConfirmModal.classList.remove('hidden'); 
+                submitConfirmModal.classList.add('flex'); 
+            } else { 
+                goToQuestion(currentQuestionIndex + 1); 
+            } 
+        });
+        saveNextBtnMobile.addEventListener('click', () => { 
+            if (currentQuestionIndex === allQuestions.length - 1) { 
+                submitConfirmModal.classList.remove('hidden'); 
+                submitConfirmModal.classList.add('flex'); 
+            } else { 
+                goToQuestion(currentQuestionIndex + 1); 
+            } 
+        });
+        submitConfirmYesBtn.addEventListener('click', () => { 
+            submitConfirmModal.classList.add('hidden'); 
+            submitConfirmModal.classList.remove('flex'); 
+            evaluateAndEndTest(); 
+        });
+        submitConfirmNoBtn.addEventListener('click', () => { 
+            submitConfirmModal.classList.add('hidden'); 
+            submitConfirmModal.classList.remove('flex'); 
+        });
+        clearResponseBtnPc.addEventListener('click', () => { 
+            selectedAnswers[currentQuestionIndex] = null; 
+            markedForReview[currentQuestionIndex] = false; 
+            if (deviceType === 'pc') {
+                updateQuestionPc();
+            } else {
+                updateQuestionMobile();
+            }
+        });
+        clearResponseBtnMobile.addEventListener('click', () => { 
+            selectedAnswers[currentQuestionIndex] = null; 
+            markedForReview[currentQuestionIndex] = false; 
+            if (deviceType === 'pc') {
+                updateQuestionPc();
+            } else {
+                updateQuestionMobile();
+            }
+        });
+        markReviewNextBtnPc.addEventListener('click', () => { 
+            markedForReview[currentQuestionIndex] = true; 
+            if (currentQuestionIndex === allQuestions.length - 1) {
+                if (deviceType === 'pc') {
+                    initQuestionPalettePc();
+                } else {
+                    initQuestionPaletteMobile();
+                }
+            } else { 
+                goToQuestion(currentQuestionIndex + 1); 
+            } 
+        });
+        markReviewNextBtnMobile.addEventListener('click', () => { 
+            markedForReview[currentQuestionIndex] = true; 
+            if (currentQuestionIndex === allQuestions.length - 1) {
+                if (deviceType === 'pc') {
+                    initQuestionPalettePc();
+                } else {
+                    initQuestionPaletteMobile();
+                }
+            } else { 
+                goToQuestion(currentQuestionIndex + 1); 
+            } 
+        });
+        viewResultsBtn.addEventListener('click', showResults);
+        reviewAnswersBtn.addEventListener('click', populateReviewPage);
+        exitReviewBtn.addEventListener('click', () => { 
+            reviewPage.classList.add('hidden'); 
+            postSubmitScreen.classList.remove('hidden'); 
+            postSubmitScreen.classList.add('flex');
+        });
+        backToOptionsBtn.addEventListener('click', () => { 
+            resultsModal.classList.add('hidden'); 
+            postSubmitScreen.classList.remove('hidden'); 
+            postSubmitScreen.classList.add('flex');
+        });
+        exitTestBtn.addEventListener('click', () => { location.reload(); });
+        const pauseAction = () => {
+            pauseTimers();
+            blurOverlay.classList.remove('hidden');
+            pauseModal.classList.remove('hidden');
+            pauseModal.classList.add('flex');
+        };
+        pauseBtnPc.addEventListener('click', pauseAction);
+        pauseMobileBtnPc.addEventListener('click', pauseAction);
+        pauseMobileBtnMobile.addEventListener('click', pauseAction);
+        resumeBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                pauseModal.classList.add('hidden');
+                fullscreenWarningModal.classList.remove('hidden');
+                fullscreenWarningModal.classList.add('flex');
+            } else {
+                blurOverlay.classList.add('hidden');
+                resumeTimers();
+                pauseModal.classList.add('hidden');
+                pauseModal.classList.remove('flex');
+            }
+        });
+        saveResultsBtn.addEventListener('click', () => { 
+            html2canvas(document.getElementById('results-content-wrapper'), { scale: 2 }).then(canvas => { 
+                const link = document.createElement('a'); 
+                link.download = 'smart-student-quiz-results.png'; 
+                link.href = canvas.toDataURL('image/png'); 
+                link.click(); 
+            }); 
+        });
+        const fullscreenAction = () => { 
+            if (!document.fullscreenElement) { 
+                document.documentElement.requestFullscreen().catch(err => { 
+                    console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`); 
+                }); 
+            } else { 
+                document.exitFullscreen(); 
+            } 
+        };
+        fullscreenBtnPc.addEventListener('click', fullscreenAction);
+        fullscreenMobileBtnPc.addEventListener('click', fullscreenAction);
+        fullscreenMobileBtnMobile.addEventListener('click', fullscreenAction);
+        document.addEventListener('fullscreenchange', () => {
+            const isFullscreen = !!document.fullscreenElement;
+            [fullscreenIconPc, fullscreenMobileIconPc, fullscreenMobileIconMobile].forEach(icon => {
+                if(icon) {
+                    icon.classList.toggle('fa-expand', !isFullscreen);
+                    icon.classList.toggle('fa-compress', isFullscreen);
+                }
+            });
+            if (!quizWrapperPc.classList.contains('hidden') || !quizWrapperMobile.classList.contains('hidden')) {
+                if (!isFullscreen) {
+                    pauseTimers();
+                    blurOverlay.classList.remove('hidden');
+                    pauseModal.classList.add('hidden');
+                    fullscreenWarningModal.classList.remove('hidden');
+                    fullscreenWarningModal.classList.add('flex');
+                } else {
+                    blurOverlay.classList.add('hidden');
+                    fullscreenWarningModal.classList.add('hidden');
+                    fullscreenWarningModal.classList.remove('flex');
+                    if (pauseModal.classList.contains('hidden')) {
+                        resumeTimers();
+                    }
+                }
+            }
+        });
+        reEnterFullscreenBtn.addEventListener('click', fullscreenAction);
+        function applyFontSizing() {
+            const resizableElements = document.querySelectorAll('.question-text-resizable');
+            resizableElements.forEach(el => {
+                el.style.fontSize = `${baseFontSize}pt`;
+            });
+        }
+        const increaseFont = () => { 
+            if (baseFontSize < 28) { 
+                baseFontSize += 4; 
+                applyFontSizing(); 
+            } 
+        };
+        const decreaseFont = () => { 
+            if (baseFontSize > 10) { 
+                baseFontSize -= 4; 
+                applyFontSizing(); 
+            } 
+        };
+        fontIncreaseBtnPc.addEventListener('click', increaseFont);
+        fontDecreaseBtnPc.addEventListener('click', decreaseFont);
+        fontIncreaseMobileBtnPc.addEventListener('click', increaseFont);
+        fontDecreaseMobileBtnPc.addEventListener('click', decreaseFont);
+        fontIncreaseMobileBtnMobile.addEventListener('click', increaseFont);
+        fontDecreaseMobileBtnMobile.addEventListener('click', decreaseFont);
+        hidePaletteBtnPc.addEventListener('click', () => {
+            questionPaletteContainerPc.classList.add('hidden');
+            showPaletteBtnPc.classList.remove('hidden');
+            questionAreaPc.classList.remove('lg:w-2/3');
+            questionAreaPc.classList.add('lg:w-full');
+        });
+        showPaletteBtnPc.addEventListener('click', () => {
+            questionPaletteContainerPc.classList.remove('hidden');
+            showPaletteBtnPc.classList.add('hidden');
+            questionAreaPc.classList.add('lg:w-2/3');
+            questionAreaPc.classList.remove('lg:w-full');
+        });
+        viewTimeAnalysisBtn.addEventListener('click', populateTimeAnalysisPage);
+        exitTimeAnalysisBtn.addEventListener('click', () => { 
+            timeAnalysisPage.classList.add('hidden'); 
+            postSubmitScreen.classList.remove('hidden'); 
+            postSubmitScreen.classList.add('flex'); 
+        });
+        function flattenQuizData() {
+            let flatArray = [];
+            quizData.forEach(item => {
+                if (item.type === 'single') {
+                    flatArray.push({ ...item, isGrouped: false });
+                } else if (item.type === 'group') {
+                    item.subQuestions.forEach(subQ => {
+                        flatArray.push({ ...subQ, groupText: item.groupText, isGrouped: true });
+                    });
+                }
+            });
+            return flatArray;
+        }
+        function initQuiz() {
+            allQuestions = flattenQuizData();
+            totalQuestions = allQuestions.length;
+            totalDurationMinutes = Math.round(totalQuestions * 0.9);
+            totalTimeInSeconds = totalDurationMinutes * 60;
+            timer = totalTimeInSeconds;
+            document.getElementById('total-duration-display').textContent = `${totalDurationMinutes} minutes`;
+            document.getElementById('instruction-question-count').textContent = totalQuestions;
+            document.getElementById('instruction-marks').textContent = totalQuestions;
+            document.getElementById('instruction-total-questions').textContent = totalQuestions;
+            // Initialize timers for both interfaces
+            if (deviceType === 'pc') {
+                timerDisplayPc.textContent = formatTime(timer);
+                timerMobileDisplayPc.textContent = formatTime(timer);
+            } else {
+                timerMobileDisplayMobile.textContent = formatTime(timer);
+            }
+            questionsSeen = Array(totalQuestions).fill(false);
+            selectedAnswers = Array(totalQuestions).fill(null);
+            markedForReview = Array(totalQuestions).fill(false);
+            questionTimeSpent = Array(totalQuestions).fill(0);
+            questionsSeen[0] = true;
+            if (deviceType === 'pc') {
+                updateQuestionPc();
+            } else {
+                updateQuestionMobile();
+            }
+            startTimer();
+            startQuestionTimer();
+        }
+    </script>
+</body>
+</html>
