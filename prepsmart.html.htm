@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Preposition Pro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+            --container-bg: rgba(255, 255, 255, 0.95);
+            --primary-text: #2c3e50;
+            --secondary-text: #5d6d7e;
+            --accent-color: #2980b9;
+            --accent-hover: #2471a3;
+            --correct-color: #27ae60;
+            --wrong-color: #c0392b;
+            --explanation-bg: rgba(252, 234, 232, 0.9);
+            --border-color: #dcdcdc;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            --header-bg: #2c3e50;
+            --header-text: #87CEEB;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            height: 100%;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--primary-text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100%;
+            margin: 0;
+            padding: 1rem;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            transition: all 0.3s;
+        }
+
+        body.game-active {
+            padding-top: 80px;
+            align-items: flex-start;
+        }
+
+        #game-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: var(--header-bg);
+            color: var(--header-text);
+            font-size: 1.3rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            padding: 1rem;
+            text-align: center;
+            z-index: 1000;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            transform: translateY(-100%);
+            transition: transform 0.4s ease-out;
+        }
+
+        #game-header.visible {
+            transform: translateY(0);
+        }
+
+        .quiz-container {
+            background-color: var(--container-bg);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            padding: 2rem;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(10px);
+        }
+        
+        #start-screen, #results-screen {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        #game-screen { display: none; }
+
+        h1 {
+            color: var(--primary-text);
+            margin-bottom: 0.5rem;
+            font-size: 1.8rem;
+        }
+        
+        p {
+            color: var(--secondary-text);
+            margin-top: 0;
+            line-height: 1.6;
+        }
+        
+        #previous-stats {
+            background-color: rgba(240, 240, 240, 0.7);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+        #previous-stats p { margin: 0.2rem 0; }
+        
+        .stats-container {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+        }
+
+        #timer, #score {
+            background-color: rgba(255,255,255,0.7);
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            min-width: 110px;
+        }
+        
+        #timer.low-time {
+            animation: pulse-red 1s infinite;
+        }
+
+        #question-text {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            color: #333;
+            line-height: 1.5;
+            min-height: 80px;
+        }
+
+        #options-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .option-btn {
+            background-color: #fdfefe;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            font-size: 1.1rem;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background-color: var(--accent-color);
+            color: white;
+            transform: translateY(-3px);
+            border-color: var(--accent-color);
+        }
+        
+        .option-btn:disabled {
+            cursor: not-allowed;
+        }
+        
+        .option-btn.correct {
+            background-color: var(--correct-color);
+            color: white;
+            border-color: var(--correct-color);
+        }
+        
+        .option-btn.wrong {
+            background-color: var(--wrong-color);
+            color: white;
+            border-color: var(--wrong-color);
+        }
+
+        #mistake-feedback-container {
+            display: none;
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 12px;
+            background-color: var(--explanation-bg);
+            border: 2px solid var(--wrong-color);
+            animation: fadeIn 0.5s;
+        }
+        #mistake-feedback-container h3 {
+            margin-top: 0;
+            color: var(--wrong-color);
+        }
+        #explanation-text {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--primary-text);
+            margin-bottom: 1rem;
+        }
+
+        .primary-button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            margin-top: 1.5rem;
+            width: 100%;
+        }
+        .primary-button:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-3px);
+        }
+        
+        #detailed-stats {
+            margin: 1.5rem auto;
+            text-align: left;
+            width: 100%;
+            max-width: 280px;
+        }
+        #detailed-stats p {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.1rem;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        #detailed-stats p:last-child {
+            border-bottom: none;
+        }
+        #detailed-stats span {
+            font-weight: 700;
+        }
+        .best-score-text {
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <header id="game-header">SMART CLASSES</header>
+
+    <div class="quiz-container">
+        <div id="start-screen">
+            <h1>Preposition Pro</h1>
+            <p>You have <strong>5 minutes</strong> to answer questions. If you make a mistake, the timer will pause to give you time to learn. Good luck!</p>
+            <div id="previous-stats" style="display: none;"></div>
+            <button class="primary-button" onclick="startGame()">Start Challenge</button>
+        </div>
+
+        <div id="game-screen">
+            <div class="stats-container">
+                <div id="timer">Time: <span id="time-left">5:00</span></div>
+                <div id="score">Score: <span id="current-score">0</span></div>
+            </div>
+            <div id="question-area">
+                <div id="question-text"></div>
+                <div id="options-container"></div>
+            </div>
+            <div id="mistake-feedback-container">
+                <h3>Not Quite!</h3>
+                <p id="explanation-text"></p>
+                <button id="next-button" class="primary-button">Next</button>
+            </div>
+        </div>
+
+        <div id="results-screen" style="display: none;">
+            <h1 id="results-title">Quiz Over</h1>
+            <div id="detailed-stats">
+                <p>Points: <span id="stats-points">0</span></p>
+                <p>Correct: <span id="stats-correct">0</span></p>
+                <p>Wrong: <span id="stats-wrong">0</span></p>
+                <p>Accuracy: <span id="stats-accuracy">0.00%</span></p>
+                <p class="best-score-text">🏆 Best Score: <span id="stats-best">0</span></p>
+            </div>
+            <button class="primary-button" onclick="startGame()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        const timeLeftDisplay = document.getElementById('time-left');
+        const scoreDisplay = document.getElementById('current-score');
+        const questionArea = document.getElementById('question-area');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const gameHeader = document.getElementById('game-header');
+        const resultsTitle = document.getElementById('results-title');
+        const previousStatsDisplay = document.getElementById('previous-stats');
+        
+        const mistakeFeedbackContainer = document.getElementById('mistake-feedback-container');
+        const explanationText = document.getElementById('explanation-text');
+        const nextButton = document.getElementById('next-button');
+
+        // Game State
+        let score = 0, timer, timeLeft = 300, currentQuestionIndices = [], currentQuestion = {};
+        let correctCount = 0, incorrectCount = 0;
+        let gameIsActive = false;
+
+        // The complete and final database of 300 questions.
+        const questionDatabase = [
+            { sentence: "The book is ___ the table.", options: ["on", "in", "at", "by"], answer: "on", explanation: "Use 'on' to indicate something is on a surface." },
+            { sentence: "Anika is waiting ___ the bus stop.", options: ["at", "on", "in", "for"], answer: "at", explanation: "Use 'at' for specific points or locations." },
+            { sentence: "Aarav jumped ___ the river.", options: ["into", "onto", "in", "at"], answer: "into", explanation: "Use 'into' to show movement from outside to inside something." },
+            { sentence: "I will see you ___ Monday.", options: ["on", "in", "at", "by"], answer: "on", explanation: "Use 'on' for specific days of the week." },
+            { sentence: "My birthday is ___ October.", options: ["in", "on", "at", "from"], answer: "in", explanation: "Use 'in' for months, years, and seasons." },
+            { sentence: "Priya lives ___ Mumbai.", options: ["in", "at", "on", "to"], answer: "in", explanation: "Use 'in' for cities, countries, and large areas." },
+            { sentence: "The cat is hiding ___ the bed.", options: ["under", "over", "on", "with"], answer: "under", explanation: "'Under' means directly below something." },
+            { sentence: "Rohan is leaning ___ the wall.", options: ["against", "on", "by", "at"], answer: "against", explanation: "Use 'against' to show support or pressure on a surface." },
+            { sentence: "We drove ___ the tunnel.", options: ["through", "across", "over", "in"], answer: "through", explanation: "Use 'through' to indicate movement within an enclosed space." },
+            { sentence: "The plane flew ___ the clouds.", options: ["above", "under", "in", "to"], answer: "above", explanation: "'Above' means higher than something, but not necessarily directly over it." },
+            { sentence: "I received a letter ___ my friend.", options: ["from", "by", "with", "about"], answer: "from", explanation: "Use 'from' to indicate the origin or source of something." },
+            { sentence: "She is very good ___ painting.", options: ["at", "in", "on", "with"], answer: "at", explanation: "The phrase is 'good at' something, referring to a skill." },
+            { sentence: "He is responsible ___ his actions.", options: ["for", "of", "to", "with"], answer: "for", explanation: "Use 'responsible for' to indicate a duty or cause." },
+            { sentence: "Please divide this chocolate ___ the two of you.", options: ["between", "among", "with", "in"], answer: "between", explanation: "Use 'between' when referring to two people or things." },
+            { sentence: "The teacher distributed the sweets ___ all the students.", options: ["among", "between", "to", "for"], answer: "among", explanation: "Use 'among' when referring to more than two people or things." },
+            { sentence: "I have been working here ___ 2015.", options: ["since", "for", "from", "at"], answer: "since", explanation: "Use 'since' with a specific point in time in the past." },
+            { sentence: "I have been working here ___ five years.", options: ["for", "since", "from", "in"], answer: "for", explanation: "Use 'for' with a duration or period of time." },
+            { sentence: "He went to the shop ___ buy some milk.", options: ["to", "for", "at", "with"], answer: "to", explanation: "Use 'to' + verb to show the purpose of an action (infinitive of purpose)." },
+            { sentence: "She is allergic ___ peanuts.", options: ["to", "from", "with", "of"], answer: "to", explanation: "The correct phrasal verb is 'allergic to'." },
+            { sentence: "Kabir was accused ___ theft.", options: ["of", "for", "with", "by"], answer: "of", explanation: "The correct phrasal verb is 'accused of'." },
+            { sentence: "The train arrived right ___ time.", options: ["on", "in", "at", "by"], answer: "on", explanation: "'On time' means at the scheduled time. 'In time' means with enough time to spare." },
+            { sentence: "We should be ___ the cinema in five minutes.", options: ["at", "in", "on", "to"], answer: "at", explanation: "Use 'at' for public places or buildings like the cinema, airport, or school." },
+            { sentence: "He is married ___ my cousin.", options: ["to", "with", "by", "for"], answer: "to", explanation: "The correct phrase is 'married to' someone." },
+            { sentence: "I prefer tea ___ coffee.", options: ["to", "than", "over", "from"], answer: "to", explanation: "When using 'prefer', the comparison is made with 'to', not 'than'." },
+            { sentence: "The shop is open ___ 9 AM to 9 PM.", options: ["from", "since", "at", "by"], answer: "from", explanation: "Use 'from...to' to show the start and end of a time period." },
+            { sentence: "Don't be angry ___ me.", options: ["with", "at", "on", "about"], answer: "with", explanation: "You are 'angry with' a person and 'angry at' a thing or situation." },
+            { sentence: "I am worried ___ my exam results.", options: ["about", "for", "of", "on"], answer: "about", explanation: "The correct phrasal verb is 'worried about'." },
+            { sentence: "The story was written ___ Rabindranath Tagore.", options: ["by", "from", "with", "of"], answer: "by", explanation: "Use 'by' to indicate the agent or person who performed the action." },
+            { sentence: "I cut the paper ___ a pair of scissors.", options: ["with", "by", "from", "of"], answer: "with", explanation: "Use 'with' to indicate the instrument used to perform an action." },
+            { sentence: "The bridge goes ___ the river.", options: ["over", "above", "on", "through"], answer: "over", explanation: "Use 'over' or 'across' when something crosses from one side to the other." },
+            { sentence: "She sat ___ me in the class.", options: ["beside", "across", "along", "next"], answer: "beside", explanation: "'Beside' means next to." },
+            { sentence: "The child ran ___ the road.", options: ["across", "through", "along", "over"], answer: "across", explanation: "Use 'across' to indicate movement from one side of a surface to the other." },
+            { sentence: "I'm looking forward ___ meeting you.", options: ["to", "for", "at", "on"], answer: "to", explanation: "The phrasal verb is 'look forward to', and it's followed by a gerund (-ing verb)." },
+            { sentence: "This material is different ___ that one.", options: ["from", "than", "to", "with"], answer: "from", explanation: "The standard phrase is 'different from'. 'Different to' is common in UK English, but 'from' is universally correct." },
+            { sentence: "Let's meet ___ noon.", options: ["at", "on", "in", "by"], answer: "at", explanation: "Use 'at' for specific times of the day like noon, midnight, or 10 PM." },
+            { sentence: "He has been absent ___ class since last week.", options: ["from", "of", "in", "for"], answer: "from", explanation: "The correct phrase is 'absent from'." },
+            { sentence: "The dog is sleeping ___ the sofa.", options: ["on", "in", "at", "under"], answer: "on", explanation: "Use 'on' for surfaces." },
+            { sentence: "The keys are ___ my pocket.", options: ["in", "on", "at", "inside"], answer: "in", explanation: "Use 'in' for enclosed spaces." },
+            { sentence: "We walked ___ the park.", options: ["through", "across", "over", "along"], answer: "through", explanation: "Use 'through' when moving inside an area with things on all sides (like trees in a park)." },
+            { sentence: "She is interested ___ classical music.", options: ["in", "on", "at", "about"], answer: "in", explanation: "The correct phrasal verb is 'interested in'." },
+            { sentence: "He insisted ___ paying for the dinner.", options: ["on", "in", "at", "for"], answer: "on", explanation: "The correct phrasal verb is 'insisted on'." },
+            { sentence: "The film starts ___ 7 PM.", options: ["at", "on", "in", "from"], answer: "at", explanation: "Use 'at' for specific clock times." },
+            { sentence: "My house is ___ the end of the street.", options: ["at", "in", "on", "by"], answer: "at", explanation: "Use 'at the end of' for a specific point. 'In the end' means 'finally'." },
+            { sentence: "I'm tired ___ listening to your complaints.", options: ["of", "from", "with", "by"], answer: "of", explanation: "The correct phrasal verb is 'tired of'." },
+            { sentence: "He apologised ___ his rude behaviour.", options: ["for", "of", "at", "to"], answer: "for", explanation: "You 'apologise for' something you did." },
+            { sentence: "She is famous ___ her beautiful voice.", options: ["for", "of", "with", "at"], answer: "for", explanation: "Use 'famous for' to state the reason for the fame." },
+            { sentence: "The cat is ___ the roof.", options: ["on", "in", "at", "over"], answer: "on", explanation: "Use 'on' for surfaces, like a roof." },
+            { sentence: "The ball rolled ___ the hill.", options: ["down", "up", "over", "off"], answer: "down", explanation: "'Down' indicates movement from a higher to a lower point." },
+            { sentence: "I am not familiar ___ this author.", options: ["with", "to", "about", "for"], answer: "with", explanation: "The correct phrase is 'familiar with'." },
+            { sentence: "The festival takes place ___ December.", options: ["in", "on", "at", "from"], answer: "in", explanation: "Use 'in' for months." },
+            { sentence: "He threw the stone ___ the window.", options: ["at", "to", "on", "in"], answer: "at", explanation: "Use 'throw at' to indicate an aggressive action. 'Throw to' is for passing something to someone." },
+            { sentence: "The temperature is ___ zero degrees.", options: ["below", "under", "down", "less"], answer: "below", explanation: "Use 'below' for measurements on a scale, like temperature." },
+            { sentence: "Let's go for a walk ___ the beach.", options: ["along", "across", "through", "over"], answer: "along", explanation: "Use 'along' to indicate movement in a line next to something long, like a beach or road." },
+            { sentence: "The milk is ___ the fridge.", options: ["in", "on", "at", "by"], answer: "in", explanation: "Use 'in' for enclosed spaces." },
+            { sentence: "Riya is sitting ___ Rohan and Priya.", options: ["between", "among", "with", "by"], answer: "between", explanation: "Use 'between' for something in the middle of two other things." },
+            { sentence: "He arrived just ___ time for the meeting.", options: ["in", "on", "at", "by"], answer: "in", explanation: "'In time' means with enough time to spare before a deadline. 'On time' means exactly at the scheduled time." },
+            { sentence: "I agree ___ you on this point.", options: ["with", "to", "on", "by"], answer: "with", explanation: "You 'agree with' a person." },
+            { sentence: "She is suffering ___ a fever.", options: ["from", "with", "of", "by"], answer: "from", explanation: "The correct phrasal verb is 'suffering from'." },
+            { sentence: "He is proud ___ his daughter's achievements.", options: ["of", "for", "on", "with"], answer: "of", explanation: "The correct phrasal verb is 'proud of'." },
+            { sentence: "The conference will be held ___ the Taj Hotel.", options: ["at", "in", "on", "by"], answer: "at", explanation: "Use 'at' for specific buildings or venues." },
+            { sentence: "The cat jumped ___ the counter.", options: ["onto", "into", "on", "at"], answer: "onto", explanation: "Use 'onto' to show movement to a position on a surface." },
+            { sentence: "Kavya has been living here ___ a long time.", options: ["for", "since", "at", "in"], answer: "for", explanation: "Use 'for' with a period of time." },
+            { sentence: "The village is just ___ those hills.", options: ["beyond", "over", "through", "under"], answer: "beyond", explanation: "'Beyond' means on the far side of something." },
+            { sentence: "Please complete the task ___ an hour.", options: ["within", "at", "on", "for"], answer: "within", explanation: "'Within' specifies that something must happen inside a certain time limit." },
+            { sentence: "I can't imagine life ___ you.", options: ["without", "beside", "from", "of"], answer: "without", explanation: "'Without' means in the absence of." },
+            { sentence: "Arjun walked ___ the exit.", options: ["towards", "away", "from", "in"], answer: "towards", explanation: "'Towards' indicates the direction of movement." },
+            { sentence: "She went for a walk ___ the rain.", options: ["despite", "although", "because", "with"], answer: "despite", explanation: "Use 'despite' to show contrast; something happened even though there was a reason for it not to." },
+            { sentence: "The puppy is hiding ___ the table.", options: ["beneath", "over", "on", "at"], answer: "beneath", explanation: "'Beneath' is a more formal word for 'under'." },
+            { sentence: "This painting is ___ one of the masters.", options: ["by", "from", "with", "of"], answer: "by", explanation: "Use 'by' to show who created something." },
+            { sentence: "I am not angry ___ the situation.", options: ["at", "with", "on", "for"], answer: "at", explanation: "You are 'angry at' a thing or situation and 'angry with' a person." },
+            { sentence: "The report is due ___ Friday.", options: ["on", "in", "at", "by"], answer: "on", explanation: "Use 'on' for specific days." },
+            { sentence: "He has a scar ___ his forehead.", options: ["on", "in", "at", "over"], answer: "on", explanation: "Use 'on' to show location on a part of the body." },
+            { sentence: "Meera believes ___ ghosts.", options: ["in", "at", "on", "about"], answer: "in", explanation: "The phrase is 'to believe in' something." },
+            { sentence: "We arrived ___ the morning.", options: ["in", "on", "at", "by"], answer: "in", explanation: "Use 'in' for parts of the day like 'in the morning', 'in the afternoon', 'in the evening'." },
+            { sentence: "The discussion was mainly ___ the new budget.", options: ["about", "of", "for", "on"], answer: "about", explanation: "'About' is used to indicate the subject of something." },
+            { sentence: "He fell ___ his bike.", options: ["off", "from", "down", "out"], answer: "off", explanation: "'Off' is used to show separation or removal from a surface." },
+            { sentence: "The path leads ___ the forest.", options: ["through", "across", "over", "along"], answer: "through", explanation: "Use 'through' when moving inside an area." },
+            { sentence: "I'll be back ___ an hour.", options: ["in", "on", "at", "by"], answer: "in", explanation: "Use 'in' to specify a point in the future ('in an hour' = one hour from now)." },
+            { sentence: "The letter is ___ my drawer.", options: ["in", "on", "at", "under"], answer: "in", explanation: "Use 'in' for an enclosed space." },
+            { sentence: "What is the time ___ your watch?", options: ["by", "in", "on", "at"], answer: "by", explanation: "The correct idiom is 'by your watch'." },
+            { sentence: "He succeeded ___ a lot of hard work.", options: ["through", "by", "with", "from"], answer: "through", explanation: "'Through' can mean 'by means of'." },
+            { sentence: "The company has been ___ new management.", options: ["under", "below", "in", "with"], answer: "under", explanation: "'Under new management' is a set phrase." },
+            { sentence: "Ishaan is known ___ his generosity.", options: ["for", "of", "to", "with"], answer: "for", explanation: "The phrase 'known for' explains why someone is famous." },
+            { sentence: "The decision depends ___ the final results.", options: ["on", "of", "at", "from"], answer: "on", explanation: "The phrasal verb is 'depends on'." },
+            { sentence: "He is senior ___ me by two years.", options: ["to", "than", "from", "of"], answer: "to", explanation: "Words like 'senior', 'junior', 'superior' use 'to' for comparison, not 'than'." },
+            { sentence: "The Taj Mahal is made ___ marble.", options: ["of", "from", "with", "by"], answer: "of", explanation: "Use 'made of' when the original material is still visible. Use 'made from' when it has been transformed." },
+            { sentence: "She deals ___ antique furniture.", options: ["in", "with", "at", "on"], answer: "in", explanation: "'To deal in' means to buy and sell. 'To deal with' means to handle a situation." },
+            { sentence: "He was prevented ___ entering the building.", options: ["from", "to", "of", "by"], answer: "from", explanation: "The correct phrasal verb is 'prevented from'." },
+            { sentence: "The students are protesting ___ the fee hike.", options: ["against", "for", "with", "about"], answer: "against", explanation: "Use 'against' to show opposition." },
+            { sentence: "I'm sorry ___ what happened.", options: ["for", "about", "of", "to"], answer: "for", explanation: "You are 'sorry for' something you did, and 'sorry about' a situation." },
+            { sentence: "The city is located ___ the coast.", options: ["on", "in", "at", "by"], answer: "on", explanation: "Use 'on the coast' for a location next to the sea." },
+            { sentence: "He is standing ___ the corner of the street.", options: ["at", "in", "on", "by"], answer: "at", explanation: "Use 'at the corner' for an outside corner, and 'in the corner' for an inside corner of a room." },
+            { sentence: "The picture is hanging ___ the fireplace.", options: ["over", "above", "on", "at"], answer: "over", explanation: "'Over' means directly above. 'Above' means higher, but not necessarily directly." },
+            { sentence: "She has been studying ___ midnight.", options: ["since", "for", "at", "from"], answer: "since", explanation: "Use 'since' for the start time of an action that continues to the present." },
+            { sentence: "We need to finish this ___ tomorrow.", options: ["by", "until", "at", "on"], answer: "by", explanation: "'By' indicates a deadline. 'Until' indicates how long an action continues." },
+            { sentence: "He will wait ___ you get back.", options: ["until", "by", "for", "since"], answer: "until", explanation: "'Until' is used to show how long a situation will last." },
+            { sentence: "She is a specialist ___ heart surgery.", options: ["in", "at", "on", "of"], answer: "in", explanation: "You are a 'specialist in' a particular field." },
+            { sentence: "This book is based ___ a true story.", options: ["on", "in", "at", "from"], answer: "on", explanation: "The phrasal verb is 'based on'." },
+            { sentence: "He is busy ___ his work.", options: ["with", "at", "in", "on"], answer: "with", explanation: "The phrase is 'busy with'." },
+            { sentence: "The room was filled ___ smoke.", options: ["with", "of", "by", "from"], answer: "with", explanation: "The phrasal verb is 'filled with'." },
+            { sentence: "The car crashed ___ a tree.", options: ["into", "onto", "at", "on"], answer: "into", explanation: "Use 'into' for a collision." },
+            { sentence: "The police are looking ___ the matter.", options: ["into", "at", "on", "for"], answer: "into", explanation: "'To look into' means to investigate." },
+            { sentence: "She is confident ___ her success.", options: ["of", "in", "about", "for"], answer: "of", explanation: "The phrase is 'confident of' or 'confident about'." },
+            { sentence: "He is exempt ___ paying tax.", options: ["from", "of", "to", "with"], answer: "from", explanation: "The phrase is 'exempt from'." },
+            { sentence: "She has a talent ___ music.", options: ["for", "in", "at", "of"], answer: "for", explanation: "You have a 'talent for' something." },
+            { sentence: "The train to Delhi departs ___ Platform 3.", options: ["from", "at", "on", "in"], answer: "from", explanation: "'From' indicates the starting point." },
+            { sentence: "He complained ___ the manager about the service.", options: ["to", "at", "with", "for"], answer: "to", explanation: "You 'complain to' a person." },
+            { sentence: "The secret was shared ___ a few close friends.", options: ["among", "between", "with", "by"], answer: "among", explanation: "Use 'among' for a group of more than two." },
+            { sentence: "I ran ___ my old friend at the market.", options: ["into", "onto", "at", "on"], answer: "into", explanation: "'To run into' someone means to meet them unexpectedly." },
+            { sentence: "He divided his property ___ his two sons.", options: ["between", "among", "with", "in"], answer: "between", explanation: "Use 'between' for two entities." },
+            { sentence: "The temperature rose ___ 40 degrees.", options: ["above", "over", "on", "at"], answer: "above", explanation: "Use 'above' for points on a vertical scale." },
+            { sentence: "We walked ___ the river bank.", options: ["along", "across", "through", "over"], answer: "along", explanation: "Use 'along' to show movement following a line." },
+            { sentence: "The helicopter hovered ___ the building.", options: ["over", "above", "on", "at"], answer: "over", explanation: "'Over' implies being directly above." },
+            { sentence: "He put the blanket ___ the sleeping child.", options: ["over", "above", "on", "at"], answer: "over", explanation: "'Over' can mean 'covering'." },
+            { sentence: "The mountains are visible ___ the distance.", options: ["in", "at", "on", "from"], answer: "in", explanation: "The correct idiom is 'in the distance'." },
+            { sentence: "The new rules will come ___ effect next month.", options: ["into", "onto", "at", "on"], answer: "into", explanation: "The phrase is 'come into effect'." },
+            { sentence: "He has no control ___ his temper.", options: ["over", "on", "at", "with"], answer: "over", explanation: "You have 'control over' something." },
+            { sentence: "She has great affection ___ her grandparents.", options: ["for", "to", "with", "of"], answer: "for", explanation: "You have 'affection for' someone." },
+            { sentence: "The solution lies ___ finding the right person.", options: ["in", "at", "on", "with"], answer: "in", explanation: "The phrase is 'the solution lies in'." },
+            { sentence: "He has a reputation ___ being honest.", options: ["for", "of", "to", "with"], answer: "for", explanation: "You have a 'reputation for' a certain quality." },
+            { sentence: "The building is ___ construction.", options: ["under", "in", "at", "on"], answer: "under", explanation: "The phrase 'under construction' means it is being built." },
+            { sentence: "I have an appointment ___ the dentist.", options: ["with", "to", "at", "for"], answer: "with", explanation: "You have an 'appointment with' a person." },
+            { sentence: "The flight was delayed ___ bad weather.", options: ["due to", "because", "by", "with"], answer: "due to", explanation: "'Due to' means 'as a result of'." },
+            { sentence: "He is related ___ a famous actor.", options: ["to", "with", "by", "from"], answer: "to", explanation: "The phrase is 'related to'." },
+            { sentence: "We must be prepared ___ the worst.", options: ["for", "to", "of", "with"], answer: "for", explanation: "The phrase is 'prepared for'." },
+            { sentence: "The town is famous ___ its temples.", options: ["for", "of", "with", "at"], answer: "for", explanation: "Use 'famous for' to give the reason for fame." },
+            { sentence: "She is dressed ___ a beautiful sari.", options: ["in", "with", "by", "on"], answer: "in", explanation: "Use 'dressed in' to describe clothing." },
+            { sentence: "The dog barked ___ the stranger.", options: ["at", "on", "to", "with"], answer: "at", explanation: "The phrase is 'to bark at'." },
+            { sentence: "He is blind ___ one eye.", options: ["in", "of", "with", "from"], answer: "in", explanation: "The correct phrase is 'blind in one eye'." },
+            { sentence: "This is a matter ___ great importance.", options: ["of", "for", "with", "at"], answer: "of", explanation: "'Of' is used to show possession or relation." },
+            { sentence: "He died ___ a heart attack.", options: ["of", "from", "with", "by"], answer: "of", explanation: "Use 'died of' for diseases or internal causes. Use 'died from' for external causes." },
+            { sentence: "She warned me ___ the danger.", options: ["of", "about", "for", "from"], answer: "of", explanation: "You can 'warn someone of' or 'warn someone about' a danger." },
+            { sentence: "The house is ___ sale.", options: ["for", "on", "at", "in"], answer: "for", explanation: "'For sale' means available to be bought. 'On sale' means at a reduced price." },
+            { sentence: "He travelled all ___ the world.", options: ["over", "around", "through", "in"], answer: "over", explanation: "'All over the world' is a common idiom." },
+            { sentence: "I am looking ___ my keys.", options: ["for", "at", "to", "on"], answer: "for", explanation: "'To look for' means to search." },
+            { sentence: "The sun is shining ___ the sky.", options: ["in", "on", "at", "over"], answer: "in", explanation: "We perceive the sun as being 'in the sky'." },
+            { sentence: "The boy fell ___ the stairs.", options: ["down", "off", "from", "out"], answer: "down", explanation: "'Down' indicates the direction of the fall on the stairs." },
+            { sentence: "She is sitting ___ the fire.", options: ["by", "at", "on", "in"], answer: "by", explanation: "'By' means near or beside." },
+            { sentence: "He is afraid ___ dogs.", options: ["of", "from", "with", "by"], answer: "of", explanation: "The phrasal verb is 'afraid of'." },
+            { sentence: "The match was broadcast live ___ television.", options: ["on", "in", "at", "by"], answer: "on", explanation: "We use 'on' for media like television, radio, and the internet." },
+            { sentence: "She is not aware ___ the situation.", options: ["of", "about", "for", "with"], answer: "of", explanation: "The phrasal verb is 'aware of'." },
+            { sentence: "The office is ___ the fifth floor.", options: ["on", "in", "at", "by"], answer: "on", explanation: "Use 'on' for floors of a building." },
+            { sentence: "He is jealous ___ his brother's success.", options: ["of", "from", "with", "by"], answer: "of", explanation: "The phrasal verb is 'jealous of'." },
+            { sentence: "I am grateful ___ you for your help.", options: ["to", "for", "with", "of"], answer: "to", explanation: "You are 'grateful to' a person 'for' something." },
+            { sentence: "The book is divided ___ three sections.", options: ["into", "in", "by", "with"], answer: "into", explanation: "Use 'divided into' to show the result of a division." },
+            { sentence: "The cat is fond ___ milk.", options: ["of", "for", "with", "at"], answer: "of", explanation: "The phrasal verb is 'fond of'." },
+            { sentence: "He has a taste ___ classical music.", options: ["for", "of", "in", "at"], answer: "for", explanation: "The phrase is 'a taste for'." },
+            { sentence: "The noise came from ___ the house.", options: ["within", "inside", "in", "at"], answer: "within", explanation: "'Within' is a more formal word for 'inside'." },
+            { sentence: "The car is parked ___ the house.", options: ["in front of", "before", "ahead", "at"], answer: "in front of", explanation: "'In front of' indicates a position directly before something." },
+            { sentence: "He is hiding ___ the door.", options: ["behind", "after", "back", "under"], answer: "behind", explanation: "'Behind' means at the back of." },
+            { sentence: "The shop is ___ the post office.", options: ["opposite", "against", "across", "front"], answer: "opposite", explanation: "'Opposite' means on the other side of something." },
+            { sentence: "She is sitting ___ the table.", options: ["at", "on", "in", "by"], answer: "at", explanation: "Use 'at the table' for activities like eating or working." },
+            { sentence: "He has been working ___ dawn.", options: ["since", "for", "at", "from"], answer: "since", explanation: "Use 'since' with a specific starting point in time." },
+            { sentence: "The meeting will last ___ 5 PM.", options: ["until", "by", "for", "to"], answer: "until", explanation: "'Until' indicates the end point of a continuous action." },
+            { sentence: "He has no experience ___ this field.", options: ["in", "at", "on", "of"], answer: "in", explanation: "You have 'experience in' a field or area." },
+            { sentence: "She is recovering ___ her illness.", options: ["from", "of", "with", "by"], answer: "from", explanation: "The phrasal verb is 'recovering from'." },
+            { sentence: "The police searched ___ the missing child.", options: ["for", "at", "of", "on"], answer: "for", explanation: "The phrasal verb 'to search for' means to look for." },
+            { sentence: "He is satisfied ___ his results.", options: ["with", "by", "at", "for"], answer: "with", explanation: "The phrasal verb is 'satisfied with'." },
+            { sentence: "The tour will take you ___ the city.", options: ["around", "over", "through", "in"], answer: "around", explanation: "'Around' indicates movement along the circumference or in various parts of a place." },
+            { sentence: "The secret ___ success is hard work.", options: ["to", "of", "for", "in"], answer: "to", explanation: "The phrases are 'the secret to' or 'the key to'." },
+            { sentence: "There is no exception ___ this rule.", options: ["to", "for", "of", "with"], answer: "to", explanation: "The phrase is 'an exception to'." },
+            { sentence: "The school is ___ walking distance from my home.", options: ["within", "at", "in", "on"], answer: "within", explanation: "The idiom is 'within walking distance'." },
+            { sentence: "He has a great deal of influence ___ his students.", options: ["on", "over", "at", "with"], answer: "on", explanation: "You have 'influence on' or 'influence over' people." },
+            { sentence: "I am ___ my way to the airport.", options: ["on", "in", "at", "by"], answer: "on", explanation: "The idiom is 'on my way'." },
+            { sentence: "He is an expert ___ robotics.", options: ["in", "at", "on", "of"], answer: "in", explanation: "You are an 'expert in' a field. You can also be an 'expert at' a skill." },
+            { sentence: "The garden is full ___ flowers.", options: ["of", "with", "by", "from"], answer: "of", explanation: "The phrasal verb is 'full of'." },
+            { sentence: "He has been accused ___ cheating.", options: ["of", "for", "with", "by"], answer: "of", explanation: "The phrasal verb is 'accused of'." },
+            { sentence: "The programme starts ___ a song.", options: ["with", "by", "from", "in"], answer: "with", explanation: "'With' can show how something begins." },
+            { sentence: "I have a meeting ___ the morning.", options: ["in", "on", "at", "by"], answer: "in", explanation: "Use 'in' for parts of the day (in the morning, in the evening)." },
+            { sentence: "He lives ___ 15, Nehru Street.", options: ["at", "in", "on", "by"], answer: "at", explanation: "Use 'at' for specific addresses." },
+            { sentence: "She put the keys ___ her bag.", options: ["into", "in", "on", "at"], answer: "into", explanation: "'Into' shows the movement from outside to inside." },
+            { sentence: "The river flows ___ the sea.", options: ["into", "to", "at", "on"], answer: "into", explanation: "'Into' is used when one thing enters another." },
+            { sentence: "He is leaning ___ the railing.", options: ["against", "on", "by", "at"], answer: "against", explanation: "Use 'against' to show physical support." },
+            { sentence: "The birds are flying high ___ the sky.", options: ["in", "on", "at", "over"], answer: "in", explanation: "We perceive things as being 'in the sky'." },
+            { sentence: "She has been waiting ___ two hours.", options: ["for", "since", "from", "at"], answer: "for", explanation: "Use 'for' with a duration of time." },
+            { sentence: "I am not concerned ___ his personal life.", options: ["with", "about", "for", "of"], answer: "with", explanation: "'Concerned with' means involved in. 'Concerned about' means worried." },
+            { sentence: "He has a passion ___ photography.", options: ["for", "of", "in", "at"], answer: "for", explanation: "The phrase is 'a passion for'." },
+            { sentence: "The city is known ___ its history.", options: ["for", "of", "with", "by"], answer: "for", explanation: "Use 'known for' to give the reason for being well-known." },
+            { sentence: "She has been absent ___ school for a week.", options: ["from", "of", "in", "at"], answer: "from", explanation: "The phrase is 'absent from'." },
+            { sentence: "He is addicted ___ his phone.", options: ["to", "with", "by", "from"], answer: "to", explanation: "The phrasal verb is 'addicted to'." },
+            { sentence: "The company has invested a lot of money ___ research.", options: ["in", "on", "at", "for"], answer: "in", explanation: "You 'invest in' something." },
+            { sentence: "He is a man ___ few words.", options: ["of", "with", "by", "from"], answer: "of", explanation: "The idiom 'a man of few words' means he is quiet." },
+            { sentence: "The car is running ___ petrol.", options: ["on", "with", "by", "from"], answer: "on", explanation: "A vehicle 'runs on' a type of fuel." },
+            { sentence: "She is an authority ___ this subject.", options: ["on", "in", "at", "of"], answer: "on", explanation: "You are 'an authority on' a subject." },
+            { sentence: "He has retired ___ his job.", options: ["from", "of", "with", "by"], answer: "from", explanation: "'To retire from' is the correct phrasal verb." },
+            { sentence: "The ship is bound ___ Singapore.", options: ["for", "to", "at", "on"], answer: "for", explanation: "'Bound for' means 'traveling towards'." },
+            { sentence: "He is capable ___ doing much better.", options: ["of", "for", "to", "with"], answer: "of", explanation: "The phrasal verb is 'capable of'." },
+            { sentence: "She has no interest ___ politics.", options: ["in", "on", "at", "about"], answer: "in", explanation: "The phrase is 'interest in'." },
+            { sentence: "The thief broke ___ the house.", options: ["into", "in", "at", "on"], answer: "into", explanation: "'To break into' means to enter a building by force." },
+            { sentence: "He takes pride ___ his work.", options: ["in", "on", "at", "of"], answer: "in", explanation: "The phrase is 'to take pride in'." },
+            { sentence: "The ceremony took place ___ the presence of the minister.", options: ["in", "at", "on", "with"], answer: "in", explanation: "The idiom is 'in the presence of'." },
+            { sentence: "He is sitting ___ his desk.", options: ["at", "on", "in", "by"], answer: "at", explanation: "Use 'at a desk' for the general location of working." },
+            { sentence: "The train passed ___ a dark tunnel.", options: ["through", "across", "over", "in"], answer: "through", explanation: "Use 'through' for movement in an enclosed space." },
+            { sentence: "The new bridge ___ the Ganga river is now open.", options: ["over", "across", "on", "at"], answer: "over", explanation: "'Over' or 'across' can be used for bridges spanning a river." },
+            { sentence: "He is popular ___ his friends.", options: ["with", "among", "in", "at"], answer: "with", explanation: "The phrase is 'popular with' or 'popular among'." },
+            { sentence: "She is a descendant ___ royalty.", options: ["of", "from", "with", "by"], answer: "of", explanation: "The phrase is 'a descendant of'." },
+            { sentence: "The concert was cancelled ___ account of the rain.", options: ["on", "in", "at", "by"], answer: "on", explanation: "The idiom is 'on account of', meaning 'because of'." },
+            { sentence: "She burst ___ tears when she heard the news.", options: ["into", "out", "in", "with"], answer: "into", explanation: "The idiom is 'to burst into tears'." },
+            { sentence: "He is a candidate ___ the position.", options: ["for", "to", "of", "at"], answer: "for", explanation: "You are a 'candidate for' a role." },
+            { sentence: "Please refrain ___ talking during the movie.", options: ["from", "of", "to", "with"], answer: "from", explanation: "The phrasal verb is 'refrain from'." },
+            { sentence: "The dog jumped ___ the fence.", options: ["over", "above", "on", "through"], answer: "over", explanation: "'Over' is used to show movement above and across something." },
+            { sentence: "I am fed up ___ his excuses.", options: ["with", "of", "by", "from"], answer: "with", explanation: "The idiom is 'fed up with'." },
+            { sentence: "The library is adjacent ___ the main hall.", options: ["to", "with", "by", "from"], answer: "to", explanation: "The word 'adjacent' is followed by 'to'." },
+            { sentence: "He is eligible ___ the post.", options: ["for", "to", "of", "with"], answer: "for", explanation: "The phrase is 'eligible for'." },
+            { sentence: "This offer is valid ___ a limited time only.", options: ["for", "since", "at", "in"], answer: "for", explanation: "Use 'for' with a duration of time." },
+            { sentence: "The airplane took ___ from the runway.", options: ["off", "out", "up", "away"], answer: "off", explanation: "The phrasal verb 'to take off' means to leave the ground." },
+            { sentence: "He is working ___ a new project.", options: ["on", "at", "in", "with"], answer: "on", explanation: "You 'work on' a project or task." },
+            { sentence: "She has been promoted ___ the rank of manager.", options: ["to", "for", "at", "with"], answer: "to", explanation: "You get 'promoted to' a new position." },
+            { sentence: "The teacher has no patience ___ lazy students.", options: ["with", "for", "at", "about"], answer: "with", explanation: "You have 'patience with' people." },
+            { sentence: "He is keen ___ learning new languages.", options: ["on", "in", "at", "about"], answer: "on", explanation: "The phrase is 'keen on'." },
+            { sentence: "The decision was made ___ my absence.", options: ["in", "at", "on", "during"], answer: "in", explanation: "The phrase is 'in my absence'." },
+            { sentence: "The factory produces goods ___ a large scale.", options: ["on", "in", "at", "with"], answer: "on", explanation: "The idiom is 'on a large scale'." },
+            { sentence: "He is opposed ___ the new policy.", options: ["to", "against", "with", "for"], answer: "to", explanation: "The phrase is 'opposed to'." },
+            { sentence: "The village is situated ___ the foothills of the Himalayas.", options: ["in", "at", "on", "by"], answer: "in", explanation: "Use 'in' for locations within a larger geographical area." },
+            { sentence: "I bumped ___ an old school friend yesterday.", options: ["into", "onto", "at", "on"], answer: "into", explanation: "'To bump into' means to meet someone by chance." },
+            { sentence: "The team consists ___ eleven players.", options: ["of", "with", "in", "by"], answer: "of", explanation: "The phrasal verb is 'consists of'." },
+            { sentence: "She has been ill ___ the past week.", options: ["for", "since", "from", "in"], answer: "for", explanation: "Use 'for' with a period of time like 'a week'." },
+            { sentence: "The cat is sleeping ___ the fireplace.", options: ["by", "at", "on", "in"], answer: "by", explanation: "'By' means near or at the side of." },
+            { sentence: "He has a great admiration ___ his teacher.", options: ["for", "to", "of", "with"], answer: "for", explanation: "You have 'admiration for' someone." },
+            { sentence: "The building was designed ___ a famous architect.", options: ["by", "from", "with", "of"], answer: "by", explanation: "Use 'by' to show the agent who did the action." },
+            { sentence: "She has a good relationship ___ her colleagues.", options: ["with", "to", "of", "for"], answer: "with", explanation: "You have a 'relationship with' people." },
+            { sentence: "The letter was sent ___ courier.", options: ["by", "with", "through", "from"], answer: "by", explanation: "Use 'by' to indicate the method of transport or communication." },
+            { sentence: "He is dependent ___ his parents for money.", options: ["on", "of", "at", "from"], answer: "on", explanation: "The phrasal verb is 'dependent on'." },
+            { sentence: "The film is based ___ a novel.", options: ["on", "in", "at", "from"], answer: "on", explanation: "The phrasal verb is 'based on'." },
+            { sentence: "She is not accustomed ___ this type of weather.", options: ["to", "with", "by", "from"], answer: "to", explanation: "The phrasal verb is 'accustomed to'." },
+            { sentence: "The event will take place ___ Sunday afternoon.", options: ["on", "in", "at", "by"], answer: "on", explanation: "Use 'on' for specific days, even if a part of the day is mentioned." },
+            { sentence: "He is blessed ___ a good voice.", options: ["with", "by", "from", "of"], answer: "with", explanation: "The phrase is 'blessed with'." },
+            { sentence: "I have to choose ___ these two options.", options: ["between", "among", "with", "in"], answer: "between", explanation: "Use 'between' when choosing from two items." },
+            { sentence: "The work must be finished ___ 6 PM.", options: ["by", "until", "at", "on"], answer: "by", explanation: "'By' indicates the deadline by which something must happen." },
+            { sentence: "The car is parked ___ the corner.", options: ["around", "at", "on", "in"], answer: "around", explanation: "'Around the corner' is an idiom meaning nearby or just past the corner." },
+            { sentence: "The manager is ___ a meeting right now.", options: ["in", "at", "on", "with"], answer: "in", explanation: "The phrase is 'in a meeting'." },
+            { sentence: "She is anxious ___ her exam results.", options: ["about", "for", "of", "on"], answer: "about", explanation: "You are 'anxious about' something that causes worry." },
+            { sentence: "He is committed ___ his goals.", options: ["to", "with", "by", "for"], answer: "to", explanation: "The phrase is 'committed to'." },
+            { sentence: "I disagree ___ you completely.", options: ["with", "to", "on", "by"], answer: "with", explanation: "You 'disagree with' a person." },
+            { sentence: "The recipe calls ___ two cups of flour.", options: ["for", "to", "of", "at"], answer: "for", explanation: "The phrasal verb 'to call for' means to require." },
+            { sentence: "He is descended ___ a noble family.", options: ["from", "of", "with", "by"], answer: "from", explanation: "The phrase is 'descended from'." },
+            { sentence: "The company is ___ debt.", options: ["in", "at", "on", "under"], answer: "in", explanation: "The phrase is 'in debt'." },
+            { sentence: "She has been missing ___ home for three days.", options: ["from", "of", "in", "at"], answer: "from", explanation: "'Missing from' indicates the place someone is absent from." },
+            { sentence: "He is involved ___ a charity organization.", options: ["in", "with", "at", "on"], answer: "in", explanation: "You are 'involved in' an activity or organization." },
+            { sentence: "The book is suitable ___ children.", options: ["for", "to", "with", "of"], answer: "for", explanation: "The phrase is 'suitable for'." },
+            { sentence: "She has no knowledge ___ the subject.", options: ["of", "about", "for", "with"], answer: "of", explanation: "You have 'knowledge of' a subject." },
+            { sentence: "The city lies ___ the banks of the river.", options: ["on", "in", "at", "by"], answer: "on", explanation: "Use 'on the banks of' for a location by a river." },
+            { sentence: "He is staring ___ the painting.", options: ["at", "on", "to", "with"], answer: "at", explanation: "The phrasal verb is 'to stare at'." }
+        ];
+        
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function openFullscreen() {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) elem.requestFullscreen();
+            else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
+            else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
+        }
+
+        function closeFullscreen() {
+            if (document.exitFullscreen) document.exitFullscreen();
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            else if (document.msExitFullscreen) document.msExitFullscreen();
+        }
+
+        function handleFullscreenChange() {
+            const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+            if (!isFullscreen && gameIsActive) {
+                endGame("Quiz stopped: Fullscreen exited");
+            }
+        }
+
+        function loadInitialState() {
+            const lastStats = JSON.parse(localStorage.getItem('prepositionQuizLastStats'));
+            const bestScore = localStorage.getItem('prepositionQuizBestScore');
+            
+            if (lastStats || bestScore) {
+                let statsHTML = '';
+                if (lastStats) {
+                    statsHTML += `<p><strong>Last Attempt:</strong> Score ${lastStats.score}, Accuracy ${lastStats.accuracy}%</p>`;
+                }
+                if (bestScore) {
+                    statsHTML += `<p class="best-score-text">🏆 Best Score: ${bestScore}</p>`;
+                }
+                previousStatsDisplay.innerHTML = statsHTML;
+                previousStatsDisplay.style.display = 'block';
+            }
+        }
+
+        function startGame() {
+            openFullscreen();
+            
+            // --- NEW LOGIC for unique questions across sessions ---
+            let seenIndices = JSON.parse(localStorage.getItem('prepositionQuizSeenIndices')) || [];
+            const allIndices = Array.from(Array(questionDatabase.length).keys()); // Creates [0, 1, 2, ...]
+            
+            let unseenIndices = allIndices.filter(index => !seenIndices.includes(index));
+
+            if (unseenIndices.length === 0) {
+                alert("Congratulations! You have attempted all available questions. The question history will now be reset.");
+                localStorage.removeItem('prepositionQuizSeenIndices');
+                unseenIndices = allIndices;
+            }
+
+            currentQuestionIndices = shuffleArray(unseenIndices); // This is the deck for the current game
+
+            gameIsActive = true;
+            score = 0;
+            timeLeft = 300;
+            correctCount = 0;
+            incorrectCount = 0;
+            scoreDisplay.textContent = score;
+            
+            startScreen.style.display = 'none';
+            resultsScreen.style.display = 'none';
+            gameScreen.style.display = 'block';
+            gameHeader.classList.add('visible');
+            
+            document.addEventListener('fullscreenchange', handleFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+            
+            timeLeftDisplay.textContent = "5:00";
+            document.getElementById('timer').classList.remove('low-time');
+
+            displayQuestion();
+            resumeTimer();
+        }
+
+        function displayQuestion() {
+            if (currentQuestionIndices.length === 0) {
+                endGame("Congratulations! You've finished all available questions for this session.");
+                return;
+            }
+
+            const questionIndex = currentQuestionIndices.pop(); 
+            currentQuestion = questionDatabase[questionIndex]; 
+            currentQuestion.index = questionIndex; // Store the index to mark it as seen later
+
+            questionText.innerHTML = currentQuestion.sentence.replace('___', '______');
+            optionsContainer.innerHTML = '';
+            
+            const shuffledOptions = shuffleArray([...currentQuestion.options]);
+
+            shuffledOptions.forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.classList.add('option-btn');
+                button.onclick = () => checkAnswer(button);
+                optionsContainer.appendChild(button);
+            });
+        }
+        
+        function pauseTimer() {
+            clearInterval(timer);
+        }
+
+        function resumeTimer() {
+            const timerDiv = document.getElementById('timer');
+            timer = setInterval(() => {
+                timeLeft--;
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                timeLeftDisplay.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+                if (timeLeft <= 10) timerDiv.classList.add('low-time');
+                if (timeLeft <= 0) endGame("Time's Up!");
+            }, 1000);
+        }
+
+        function checkAnswer(selectedButton) {
+            const userAnswer = selectedButton.textContent;
+            
+            // --- NEW LOGIC: Mark question as seen permanently ---
+            let seenIndices = JSON.parse(localStorage.getItem('prepositionQuizSeenIndices')) || [];
+            if (!seenIndices.includes(currentQuestion.index)) {
+                seenIndices.push(currentQuestion.index);
+                localStorage.setItem('prepositionQuizSeenIndices', JSON.stringify(seenIndices));
+            }
+
+            const buttons = optionsContainer.querySelectorAll('.option-btn');
+            buttons.forEach(button => button.disabled = true);
+            
+            if (userAnswer === currentQuestion.answer) {
+                score += 2;
+                correctCount++;
+                selectedButton.classList.add('correct');
+                setTimeout(() => {
+                    displayQuestion();
+                }, 1000);
+            } else {
+                pauseTimer();
+                score -= 0.5; // UPDATED scoring
+                incorrectCount++;
+                selectedButton.classList.add('wrong');
+                buttons.forEach(button => {
+                    if (button.textContent === currentQuestion.answer) button.classList.add('correct');
+                });
+                questionArea.style.display = 'none';
+                explanationText.textContent = currentQuestion.explanation;
+                mistakeFeedbackContainer.style.display = 'block';
+            }
+            scoreDisplay.textContent = score.toFixed(2);
+        }
+
+        nextButton.addEventListener('click', () => {
+            mistakeFeedbackContainer.style.display = 'none';
+            questionArea.style.display = 'block';
+            displayQuestion();
+            resumeTimer();
+        });
+
+        function endGame(reason) {
+            if (!gameIsActive) return;
+            gameIsActive = false;
+            
+            pauseTimer();
+            closeFullscreen();
+            
+            document.removeEventListener('fullscreenchange', handleFullscreenChange);
+            document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+            
+            const finalScoreValue = score.toFixed(2);
+            const totalAttempted = correctCount + incorrectCount;
+            const accuracy = totalAttempted > 0 ? (correctCount / totalAttempted) * 100 : 0;
+            const accuracyFormatted = accuracy.toFixed(2);
+
+            const lastStats = { score: finalScoreValue, accuracy: accuracyFormatted };
+            localStorage.setItem('prepositionQuizLastStats', JSON.stringify(lastStats));
+
+            let bestScore = localStorage.getItem('prepositionQuizBestScore');
+            
+            if (bestScore === null || score > parseFloat(bestScore)) {
+                bestScore = finalScoreValue;
+                localStorage.setItem('prepositionQuizBestScore', bestScore);
+            }
+            
+            document.getElementById('stats-points').textContent = finalScoreValue;
+            document.getElementById('stats-correct').textContent = correctCount;
+            document.getElementById('stats-wrong').textContent = incorrectCount;
+            document.getElementById('stats-accuracy').textContent = `${accuracyFormatted}%`;
+            document.getElementById('stats-best').textContent = bestScore;
+
+            resultsTitle.textContent = reason || "Quiz Over";
+            gameScreen.style.display = 'none';
+            resultsScreen.style.display = 'block';
+            gameHeader.classList.remove('visible');
+            
+            loadInitialState();
+        }
+
+        document.addEventListener('DOMContentLoaded', loadInitialState);
+        
+    </script>
+</body>
+</html>
