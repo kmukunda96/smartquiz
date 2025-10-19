@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>SMART CLASSES – Mental Math Challenge</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
+  <style>
+    html, body {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: "Inter", sans-serif;
+      background: #f8faff;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+    #mainWrapper {min-height: 100vh;width: 100vw;display: flex;flex-direction: column;align-items: center;justify-content: center;}
+    .center-box {background: #fff;border-radius: 18px;box-shadow: 0 6px 34px 0 rgba(51,100,230,0.10);padding: 28px 22px 32px 22px;max-width: 430px;width: 100%;margin: 0 auto;display: flex;flex-direction: column;align-items: center;}
+    .logo-title {font-size: 1.34rem;font-weight:700; color: #1650dd; letter-spacing:.03em; text-align:center;margin-bottom: 8px;}
+    .sub-head {font-size: 1.17em;margin-bottom: 18px;font-weight: 600;color: #252e40;text-align:center;letter-spacing:.01em;}
+    .simple-btn, .next-btn {margin: 12px 0 0 0;width:100%;padding: 13px 0;border-radius: 9px;border: none;font-size: 1.13em;font-weight: bold;color: #fff;background: linear-gradient(90deg,#256aff,#06d6a0 89%);letter-spacing:.04em;cursor: pointer;transition: background .24s;}
+    .next-btn {margin-top:19px;background: linear-gradient(90deg,#11a434,#18a3d8);}
+    .input-field {padding: 10px;margin: 7px 0 13px 0;border-radius: 7px;border: 1.2px solid #c3d6f0;width: 97%;box-sizing: border-box;text-transform: uppercase;-webkit-user-select: text;-moz-user-select:text;user-select:text;}
+    .err-msg {color: #d93939;font-size: 0.97em;min-height: 18px;text-align:center;margin-bottom: 8px;}
+    .visit-txt {margin-top:17px;font-size:1.07em;color:#064950;font-weight:600;}
+    #mainTestArea, #endScreen {width: 100vw;height: 100vh;display: flex;align-items: center;justify-content: center;background: #eff4ff;position: fixed;z-index: 10;left: 0;top: 0;}
+    .test-frame {background: #fff;border-radius: 20px;padding: 32px 20px 24px 20px;box-shadow: 0 8px 44px 0 rgba(40,80,196,0.17);width: 98vw;max-width: 444px;margin:0 auto;min-height: 400px;display: flex;flex-direction: column;align-items: center;position: relative;}
+    .info-bar {display: flex;flex-wrap:wrap;width: 100%;align-items: flex-start;justify-content: space-between;margin-bottom: 8px;font-size: 1.03em;color: #4663a5;}
+    .badge-small {background: #ffe893;color:#8b6200;border-radius:13px;padding:4px 14px 5px 14px;font-size:.98em;font-weight:600;margin-left:3px;margin-top:3px;}
+    .questionSection {width: 99%;margin: 20px auto 11px auto;display: flex;flex-direction: column;align-items: center;}
+    .streak-txt {font-size:1.09em;color:#18a656;font-weight:700;text-align:right;width:99%;margin-bottom:7px;}
+    .q-number {font-size: 1.09em;color: #18a3d8;font-weight: 700;letter-spacing:.01em;margin-bottom: 5px;}
+    .q-box-math {background: linear-gradient(90deg,#e6edfb,#eefafe 98%);padding: 13px 4px;border-radius:13px;min-width:96%;display: flex;flex-wrap:nowrap;justify-content:center;align-items:center;font-size:1.19em;font-weight:700;color:#223357;}
+    .q-box-math .num-span {margin: 0 4px;color: #345;font-size:1.05em;font-weight:700;}
+    .op-blank {display:inline-block;min-width:39px;min-height:39px;border-radius:10px;background:#f2fafe;border:2.5px solid #e5ebff;font-size:1.13em;font-weight:900;color:#2893f3;margin:0 5px;vertical-align:middle;line-height:38px;cursor:pointer;box-sizing:border-box;transition: border-color .2s,background .2s,color .2s;text-align:center;}
+    .op-blank.filled {background:#e5fafd;border:2.5px solid #2cd5be;color:#159e7e;}
+    .op-blank.active {border:2.5px solid #246abe;background:#f0f3fe;color:#d64514;}
+    .eq-span {font-size:1.11em;margin: 0 10px 0 13px;color: #8b49d7;font-weight:900;}
+    .ans-span {font-size:1.17em;color:#0a9a2a;background:#eafbe9;border-radius:7px;padding: 1px 13px;}
+    .ops-panel {text-align:center;margin: 0 0 10px 0;}
+    .op-btn {display:inline-block;width:53px;height:38px;margin:0 5px 0 5px;font-size:1.13em;font-weight:700;border-radius:9px;background:#f5fcff;border: 2px solid #bde3f9;color:#2670c1;cursor:pointer;outline:none;transition:background .13s,border .13s,color .13s;box-shadow: 0 2px 10px #49eae344;}
+    .op-btn.selected, .op-btn:active {background:linear-gradient(90deg,#bfc2fa77,#d0f8ff);border: 2.5px solid #32936f;color: #32936f;}
+    .simple-btn2, .save-btn {margin-top:18px;font-size:1.10em;font-weight:600;border-radius: 8px;padding: 11px 32px;border:none;background: linear-gradient(90deg,#1f58aa,#06d6a0 92%);color:#fff;cursor:pointer;margin-right:7px;}
+    .save-btn {margin-top:13px;background:linear-gradient(90deg,#067a29,#16a7d6);}
+    .reset-link {margin: 13px 0 0 0; color:#0c57dc; font-size:1.03em; cursor:pointer; text-decoration:underline; letter-spacing:.01em; background:transparent; border:none;}
+    .feedback-line {min-height: 23px;margin: 11px 0 0 0;font-size: 1.09em;font-weight:600;letter-spacing:.01em;text-align:center;}
+    .feedback-correct {color: #21975a;}
+    .feedback-wrong {color: #d93939;}
+    .feedback-explain {margin-top:10px;color: #1866e4; font-weight:600; background:#f4faff; border-radius:8px; padding:8px 7px;}
+    .meta-line {display: flex;justify-content: space-between;width: 100%;margin-top:8px;font-size: 1em;color: #708098;}
+    #resetModal {display:none;}
+    .result-box {padding: 16px 10px 22px 10px;background: #f6f8fd;border-radius: 16px;width:95%;margin-top:20px;text-align:center;}
+    .final-score {font-size: 1.8em;font-weight: 700;color: #1e58d0;margin: 0 0 3px 0;letter-spacing:.04em;}
+    .result-badge {margin: 12px;font-size:1.09em;}
+    .summary-txt {margin: 8px 0; font-size:1.08em;}
+    .medal-icon {position:absolute; left:8px; top:50%; transform:translateY(-50%); font-size:1.25em;}
+    .modal-bg {position:fixed;left:0;top:0;width:100vw;height:100vh;background:#28333c22;z-index:1000;display:flex;align-items:center;justify-content:center;}
+    .modal-box {background:#fff;max-width:340px;padding:24px 16px;border-radius:16px;box-shadow:0 24px 32px #46a1ea38;text-align:center;}
+    .modal-box input {margin:12px 0 8px 0;-webkit-user-select:text;-moz-user-select:text;user-select:text;}
+    .modal-box .err-msg {margin-top:8px;}
+    .modal-box .modal-btn {margin-top:10px; padding:9px 22px;border-radius:7px;background:linear-gradient(90deg,#1f58aa,#06d6a0 92%); color:#fff;border:none;font-size:1.11em;font-weight:600;cursor:pointer;}
+    @media (max-width: 499px) {
+      .center-box, .test-frame, .result-box {max-width:98vw;padding-left:0;padding-right:0;}
+      .q-box-math {padding:8px 1vw;font-size:1.07em;}
+      .q-box-math .num-span {font-size:1.02em;}
+    }
+  </style>
+</head>
+<body oncontextmenu="return false;">
+<div id="mainWrapper" oncontextmenu="return false;">
+  <div id="splashPage" class="center-box" oncontextmenu="return false;">
+    <div class="logo-title">SMART CLASSES</div>
+    <div class="sub-head">Welcome to Mental Math Challenge</div>
+    <button class="simple-btn" id="splashBtn" onclick="enterFullScreen()">Log In</button>
+  </div>
+  <div id="entryPage" class="center-box" style="display:none;" oncontextmenu="return false;">
+    <div class="logo-title">SMART CLASSES</div>
+    <div class="sub-head">Mental Math Challenge</div>
+    <form id="startForm" onsubmit="return false;" style="width:98%;">
+      <input class="input-field" style="margin-bottom:8px;" type="text" id="userName" maxlength="30" placeholder="ENTER YOUR NAME (IN CAPS)" autocomplete="off" required>
+      <input class="input-field" type="password" id="userPass" maxlength="15" placeholder="PASSWORD" autocomplete="off" required>
+      <div class="err-msg" id="loginError"></div>
+      <button class="simple-btn" id="startQuizBtn" onclick="validateAndStart()">Start Challenge</button>
+    </form>
+  </div>
+  <div id="mainTestArea" style="display:none;" oncontextmenu="return false;">
+    <div class="test-frame" oncontextmenu="return false;">
+      <div class="logo-title">SMART CLASSES</div>
+      <div class="info-bar">
+        <div>
+          Day <span id="showDay"></span>
+          <span class="badge-small" id="showBadge"></span>
+        </div>
+        <div>
+          Highest: <span id="highScore">0</span>
+        </div>
+      </div>
+      <div class="streak-txt">Streak: <span id="showStreak"></span></div>
+      <div class="meta-line"><span id="timerText">05:00</span><span>Score: <span id="currScore">0</span></span></div>
+      <div class="questionSection">
+        <div class="q-number" id="qNumber"></div>
+        <div class="q-box-math" id="questionBlock"></div>
+      </div>
+      <div class="ops-panel" id="opsPanel"></div>
+      <button class="simple-btn" style="width:100%;margin-top:8px;" id="submitBtn" onclick="submitOperators()">Submit</button>
+      <div class="feedback-line" id="feedback"></div>
+      <div id="explainDiv"></div>
+      <button class="next-btn" id="nextBtn" style="display:none;" onclick="nextQuestion()">Next</button>
+      <button class="reset-link" onclick="showResetModal()">Reset Quiz</button>
+    </div>
+  </div>
+  <div id="endScreen" class="center-box" style="display:none;" oncontextmenu="return false;">
+    <div class="logo-title" style="margin-top:-8px;margin-bottom:-9px;">SMART CLASSES</div>
+    <div class="result-box">
+      <div style="font-weight:700;font-size:1.17em;margin:12px 0 7px 0;" id="resultName"></div>
+      <div class="final-score"><span id="finalScore"></span></div>
+      <div class="summary-txt" id="summaryStats"></div>
+      <div class="result-badge" id="resultBadge"></div>
+      <div style="color:#606880;margin:15px 0 0 0;">
+        Streak: <span id="resultStreak"></span> day(s)<br>
+        Date: <span id="resultDate"></span>
+      </div>
+      <div class="visit-txt">Total daily visits: <span id="visitCount"></span></div>
+      <button class="save-btn" onclick="saveAsImage()">Save the Screenshot</button>
+      <button class="simple-btn2" onclick="location.reload()">Back</button>
+    </div>
+    <canvas style="display:none;" id="resultCanvas"></canvas>
+  </div>
+  <div id="resetModal" class="modal-bg" oncontextmenu="return false;">
+    <div class="modal-box">
+      <h3>Reset Quiz Data</h3>
+      <p>Contact the admin for the password.</p>
+      <input class="input-field" type="password" id="resetPass" maxlength="20" placeholder="Password">
+      <div class="err-msg" id="resetErr"></div>
+      <button class="modal-btn" onclick="doReset()">Reset</button>
+      <button class="modal-btn" style="background:#eee;color:#226" onclick="hideResetModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+<script>
+const questionsTotal = 30, OPS = ['+', '-', '×', '/'];
+let questions = [], qIndex = 0, userOpsAll = [], score = 0, highScore = 0, timer = null, timeRem = 300, streak = 0, lastDateStr = "", thisDayCount = 1, visitDays = [], userName = "";
+let userOps = ["", "", ""], activeBlank = 0, paused = false;
+
+document.addEventListener('contextmenu', event => event.preventDefault());
+
+window.onload=function() {
+  document.getElementById("splashPage").style.display = "";
+  document.getElementById("entryPage").style.display = "none";
+  document.getElementById("mainTestArea").style.display = "none";
+  document.getElementById("endScreen").style.display = "none";
+  init();
+};
+
+function pad(n){ return n<10 ? "0"+n : n;}
+function operate(a, op, b) {
+  a = Number(a); b = Number(b);
+  if(op==='+') return a+b;
+  if(op==='-') return a-b;
+  if(op==='×') return a*b;
+  if(op==='/') return Math.floor(a/b);
+}
+
+function enterFullScreen(){
+  let el = document.documentElement;
+  if(el.requestFullscreen) el.requestFullscreen();
+  else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  else if(el.msRequestFullscreen) el.msRequestFullscreen();
+  document.getElementById("splashPage").style.display="none";
+  document.getElementById("entryPage").style.display="";
+}
+
+function getVisitDays() {
+  let obj = {};
+  try { obj = JSON.parse(localStorage.getItem("math_visit_days") || "{}"); } catch{obj={};}
+  return obj;
+}
+function setVisitDays(obj) {
+  localStorage.setItem("math_visit_days",JSON.stringify(obj));
+}
+function updateVisitDay() {
+  let today = getTodayStr();
+  let visitObj = getVisitDays();
+  if(!visitObj[today]) visitObj[today] = 0;
+  visitObj[today]++;
+  setVisitDays(visitObj);
+  return visitObj[today];
+}
+function updateStreak() {
+  let lastDateStr = localStorage.getItem("mental_last_date") || null;
+  let streak = +(localStorage.getItem("mental_streak")||0);
+  let todayStr = getTodayStr();
+  if(lastDateStr===todayStr) {
+    return streak;
+  } else {
+    if(lastDateStr) {
+      let ld = new Date(lastDateStr), td = new Date(todayStr);
+      let diffDays = Math.floor((td-ld)/(1000*60*60*24));
+      if(diffDays === 1) streak++;
+      else streak = 1;
+    } else {
+      streak = 1;
+    }
+    localStorage.setItem("mental_last_date", todayStr);
+    localStorage.setItem("mental_streak", streak);
+    return streak;
+  }
+}
+
+function setBadgeHtml(target, streakVal){
+  let el = (typeof target==="string"?document.getElementById(target):target);
+  let b, t, m;
+  if(streakVal>=7) {
+    b='gold'; t="Gold";
+    m = "🏅";
+  } else if(streakVal>=4) {
+    b='silver'; t="Silver";
+    m = "🥈";
+  } else {
+    b='bronze'; t="Bronze";
+    m = "🥉";
+  }
+  el.innerHTML = `<span style="background:${b==='gold'?'#ffe893':b==='silver'?'#dde6e9':'#ffdcb0'};color:${b==='gold'?'#8b6200':b==='silver'?'#758087':'#b97c0b'};padding:3px 14px 3px 38px;border-radius:13px;font-size:.98em;font-weight:600;position:relative;display:inline-block;">
+    <span class="medal-icon">${m}</span>${t}
+    </span>`;
+}
+
+function getTodayStr() {
+  let dt = new Date();
+  return dt.getFullYear()+"-"+pad(dt.getMonth()+1)+"-"+pad(dt.getDate());
+}
+
+function genQuestionObj() {
+  let tries = 0;
+  while(tries < 10000) {
+    let arr = [];
+    for(let i=0;i<4;i++) arr.push(Math.floor(Math.random()*9)+3);
+    let validOpsSeq = null, target = null;
+    for(let j=0;j<100;j++) {
+      let opsSeq = [];
+      for(let k=0;k<3;k++) opsSeq.push(OPS[Math.floor(Math.random()*4)]);
+      let res = arr[0], intermediateValid = true;
+      for(let k=0;k<3;k++) {
+        if(opsSeq[k]==='/' && res % arr[k+1] !== 0) { intermediateValid=false; break; }
+        res = operate(res, opsSeq[k], arr[k+1]);
+        if(res < 0 || parseInt(res)!=res) { intermediateValid=false; break; }
+      }
+      if(intermediateValid) { validOpsSeq=opsSeq; target=res; break;}
+    }
+    if(validOpsSeq && target && target>0) {
+      return {nums: arr, ops: validOpsSeq, target};
+    }
+    tries++;
+  }
+  return null;
+}
+
+function init(){
+  highScore = +(localStorage.getItem("mental_highscore")||0);
+  document.getElementById("highScore").innerText=highScore;
+  streak = updateStreak();
+  document.getElementById("showDay").innerText = getTodayStr();
+  document.getElementById("showStreak").innerText = streak;
+  setBadgeHtml("showBadge", streak);
+}
+
+function validateAndStart(){
+  let nm = document.getElementById('userName').value.trim().toUpperCase();
+  let pw = document.getElementById('userPass').value;
+  document.getElementById('userName').value = nm;
+  document.getElementById('userName').setAttribute("style","text-transform: uppercase;");
+  let err = (!nm) ? "Enter your name." : (pw!=="SMART@25" ? "Incorrect password." : "");
+  if(nm.match(/[^A-Z ]/)) {err="Use uppercase letters only.";}
+  if(err) { document.getElementById('loginError').innerText = err; return;}
+  userName = nm;
+  document.getElementById('loginError').innerText = "";
+  startTest();
+}
+
+function startTest(){
+  let el = document.documentElement;
+  if(el.requestFullscreen) el.requestFullscreen();
+  else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  else if(el.msRequestFullscreen) el.msRequestFullscreen();
+
+  document.getElementById("mainTestArea").style.display='flex';
+  document.getElementById("entryPage").style.display='none';
+
+  updateVisitDay();
+
+  questions=[];
+  let tries = 0;
+  while(questions.length < questionsTotal && tries < 5000) {
+    let qobj = genQuestionObj();
+    if(qobj) questions.push(qobj);
+    tries++;
+  }
+  qIndex = 0; score = 0; timeRem=300; userOpsAll = [];
+  document.getElementById("currScore").innerText=score;
+  document.getElementById("resultName").innerText = "";
+  userOps = ["", "", ""]; paused = false;
+  document.getElementById("showStreak").innerText = streak;
+  setBadgeHtml("showBadge", streak);
+  showQuestion();
+  startTimer();
+}
+
+function showQuestion(){
+  if(qIndex >= questions.length) return endTest();
+  userOps = userOpsAll[qIndex] ? [...userOpsAll[qIndex]] : ["", "", ""];
+  renderQuestionUI();
+  renderOpPanel();
+  document.getElementById("feedback").innerHTML = '';
+  document.getElementById("explainDiv").innerHTML = '';
+  document.getElementById("nextBtn").style.display = 'none';
+  document.getElementById("submitBtn").style.display = '';
+  paused = false;
+  activateBlank(userOps.findIndex(x=>!x)===-1?0:userOps.findIndex(x=>!x));
+}
+
+function renderQuestionUI() {
+  let qobj = questions[qIndex];
+  if(!qobj) {
+    document.getElementById("questionBlock").innerHTML = "<span style='color:#e39c05'>Loading questions...</span>";
+    return;
+  }
+  document.getElementById('qNumber').textContent = `Question ${qIndex+1} of ${questionsTotal}`;
+  let html = `<span class="num-span">${qobj.nums[0]}</span>`;
+  for(let i=1; i<=3; i++)
+    html += ` <span class="op-blank${userOps[i-1]?" filled":""}${activeBlank===i-1?" active":""}" id="blank${i}" onclick="activateBlank(${i-1})">${userOps[i-1]||"?"}</span> <span class="num-span">${qobj.nums[i]}</span>`;
+  html += ` <span class="eq-span">=</span> <span class="ans-span">${qobj.target}</span>`;
+  document.getElementById("questionBlock").innerHTML = html;
+}
+
+function activateBlank(idx) {
+  activeBlank = idx; renderQuestionUI(); renderOpPanel();
+}
+
+function renderOpPanel() {
+  let html = "";
+  OPS.forEach(op=>{
+    html += `<button type="button" class="op-btn${userOps[activeBlank]===op?' selected':''}" onclick="selectOp('${op}')">${op}</button>`;
+  });
+  if(userOps[activeBlank]!="") html += `<button type="button" class="op-btn" style="color:#e03a3a;border-color:#e8d0d0" onclick="clearOp()">⌫</button>`;
+  document.getElementById("opsPanel").innerHTML=html;
+}
+
+function selectOp(op) {
+  userOps[activeBlank]=op;
+  renderQuestionUI(); renderOpPanel();
+  let next = userOps.findIndex(x=>!x);
+  if(next!==-1) activateBlank(next);
+  userOpsAll[qIndex] = [...userOps];
+}
+
+function clearOp() {
+  userOps[activeBlank]=""; renderQuestionUI(); renderOpPanel(); userOpsAll[qIndex] = [...userOps];
+}
+
+function submitOperators(){
+  if(paused) return;
+  if(userOps.some(v=>!v)) {
+    document.getElementById("feedback").innerHTML='<span class="feedback-wrong">Fill all operations.</span>'; return;
+  }
+  let qobj = questions[qIndex];
+  let res = qobj.nums[0], intermediateSafe = true;
+  for(let i=0;i<3;i++) {
+    if(userOps[i]==='/' && res % qobj.nums[i+1] !== 0) { intermediateSafe=false; break; }
+    res = operate(res, userOps[i], qobj.nums[i+1]);
+    if(res < 0 || parseInt(res)!=res) { intermediateSafe=false; break;}
+  }
+  let feedbackEl = document.getElementById("feedback");
+  let explainDiv = document.getElementById("explainDiv");
+  if(!intermediateSafe) {
+    feedbackEl.innerHTML='<span class="feedback-wrong">Invalid: negative or decimal occurred.</span>'; return;
+  }
+  let correctOps = questions[qIndex].ops;
+  if(userOps.join("") === correctOps.join("")) {
+    feedbackEl.innerHTML='<span class="feedback-correct">Correct!</span>'; score+=1;
+  } else {
+    paused = true; pauseTimer();
+    feedbackEl.innerHTML="";
+    document.getElementById("submitBtn").style.display = "none";
+    document.getElementById("nextBtn").style.display = "";
+    let s = "<span class='feedback-explain'>Correct answer: ";
+    s += `<span class="num-span">${qobj.nums[0]}</span>`;
+    for(let i=1; i<=3; i++)
+      s += ` <b style="color:#1379d6;">${correctOps[i-1]}</b> <span class="num-span">${qobj.nums[i]}</span>`;
+    s += ` <span class="eq-span">=</span> <span class="ans-span">${qobj.target}</span></span>`;
+    explainDiv.innerHTML = s;
+  }
+  document.getElementById("currScore").innerText=score;
+  userOpsAll[qIndex] = [...userOps];
+  if(paused) return;
+  qIndex++;
+  setTimeout(()=>{ feedbackEl.innerHTML = ''; if(qIndex<questions.length) {userOps=[]; showQuestion();} else endTest(); },950);
+}
+
+function nextQuestion() {
+  document.getElementById("explainDiv").innerHTML = '';
+  document.getElementById("nextBtn").style.display = 'none';
+  paused = false;
+  qIndex++;
+  if(qIndex<questions.length) {userOps=[]; showQuestion();}
+  else endTest();
+}
+
+function startTimer(){
+  document.getElementById("timerText").innerText = "05:00";
+  timer = setInterval(()=>{
+    if(paused) return;
+    if(timeRem<=0) {endTest(); return;}
+    timeRem--;
+    let m = Math.floor(timeRem/60), s = timeRem%60;
+    document.getElementById("timerText").innerText = `${pad(m)}:${pad(s)}`;
+  },1000);
+}
+
+function pauseTimer() { paused = true; }
+
+function saveAsImage(){
+  let c = document.getElementById('resultCanvas');
+  c.width=400; c.height=260;
+  let ctx = c.getContext("2d");
+  ctx.fillStyle="#f0f8fe"; ctx.fillRect(0,0,c.width,c.height);
+  ctx.fillStyle="#0467d8"; ctx.font="22px Inter"; ctx.fillText("SMART CLASSES Result",18,34);
+  ctx.font="15px Inter"; ctx.fillStyle="#222";
+  ctx.fillText("Name: "+userName,18,60);
+  ctx.fillText("Total Questions: "+questions.length,18,83);
+  ctx.fillText("Correct Answers: "+score,18,103);
+  let accuracy = Math.round((score/questions.length)*100);
+  ctx.fillText("Accuracy: "+accuracy+" %",18,123);
+  ctx.fillText("Badge: "+(streak>=7?'Gold':streak>=4?'Silver':'Bronze'),18,143);
+  ctx.fillText("Streak: "+ streak +" days", 18,163);
+  ctx.fillText("Total visits: "+Object.values(getVisitDays()).reduce((a,c)=>a+c,0),18,183);
+  ctx.fillText("Date: "+getTodayStr(),18,203);
+  ctx.font="13px Inter"; ctx.fillStyle="#606880";
+  ctx.fillText("Mental Math Challenge",18,228);
+  let temp = document.createElement('a');
+  temp.download = 'math_result_'+getTodayStr()+'.png'; temp.href = c.toDataURL('image/png');
+  temp.click();
+}
+
+function endTest(){
+  clearInterval(timer);
+  let el = document.documentElement;
+  if(el.requestFullscreen) el.requestFullscreen();
+  else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  else if(el.msRequestFullscreen) el.msRequestFullscreen();
+
+  document.getElementById("mainTestArea").style.display='none';
+  document.getElementById("endScreen").style.display='flex';
+
+  document.getElementById("resultName").innerText = userName;
+  document.getElementById("finalScore").innerText = score + " / " + questions.length;
+  setBadgeHtml("resultBadge", streak);
+  document.getElementById("resultStreak").innerText = streak;
+  document.getElementById("resultDate").innerText = getTodayStr();
+
+  let visitObj = getVisitDays();
+  let totalVisits = 0;
+  for (let d in visitObj) totalVisits += visitObj[d];
+  document.getElementById("visitCount").innerText = totalVisits;
+
+  let accuracy = Math.round((score / questions.length) * 100);
+  document.getElementById("summaryStats").innerHTML =
+      `Total attempted: ${questions.length}<br>` +
+      `Correct: ${score}<br>` +
+      `Accuracy: ${accuracy}%`;
+
+  if(score > highScore){
+    highScore = score;
+    localStorage.setItem("mental_highscore", score);
+    document.getElementById("highScore").innerText = score;
+  }
+  document.exitFullscreen && document.exitFullscreen();
+}
+
+function showResetModal(){
+  document.getElementById("resetPass").value="";
+  document.getElementById("resetErr").textContent="";
+  document.getElementById("resetModal").style.display="flex";
+}
+
+function hideResetModal(){
+  document.getElementById("resetModal").style.display="none";
+}
+
+function doReset(){
+  let pass = document.getElementById("resetPass").value;
+  let expected = "qwertyuiop";
+  if(pass!==expected){
+    document.getElementById("resetErr").textContent="Contact the admin for the password.";
+    return;
+  }
+  localStorage.removeItem("mental_streak");
+  localStorage.removeItem("mental_last_date");
+  localStorage.removeItem("math_visit_days");
+  localStorage.removeItem("mental_highscore");
+  document.getElementById("resetModal").style.display="none";
+  location.reload();
+}
+
+document.addEventListener('fullscreenchange', function(){
+  if(document.getElementById("mainTestArea").style.display!=='none') {
+    if(!document.fullscreenElement) {endTest();}
+  }
+});
+</script>
+</body>
+</html>
