@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Resource Hub</title>
+    
+    <!-- 1. Load Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 3. Configuration for Tailwind (like using 'Inter' font) --><script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                },
+            },
+        };
+    </script>
+    
+    <!-- 4. Custom Styles --><style>
+        /* Basic setup */
+        html, body {
+            scroll-behavior: smooth;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* Hide scrollbars initially */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Tailwind 'slate-50' */
+        }
+        
+        /* Styles for the active tab */
+        .tab-active {
+            border-bottom-color: #3b82f6; /* Tailwind 'blue-500' */
+            color: #3b82f6;
+            font-weight: 600;
+        }
+
+        /* Fullscreen professional login overlay */
+        #login-overlay {
+            background: linear-gradient(135deg, #0f172a, #1e3a8a); /* From slate-900 to blue-800 */
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800" oncontextmenu="return false;">
+
+    <!-- 
+    ============================================================
+    LOGIN OVERLAY - This is shown on page load
+    ============================================================
+    --><div id="login-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden">
+        <div class="w-full max-w-md text-center">
+            <!-- Logo on Login Page --><img src="https://kmukunda96.github.io/smartquiz/SMART LOGO.jpg" alt="SMART Logo" class="mx-auto h-24 w-auto mb-8">
+            
+            <!-- Step 1: Batch Selection --><div id="batch-selection" class="w-full">
+                <h1 class="text-4xl font-bold text-white mb-4">Resource Hub Login</h1>
+                <p class="text-xl text-white/80 mb-10">Please select your batch to continue.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <button class="batch-btn bg-white/20 backdrop-blur-md text-white font-semibold text-lg py-6 px-4 rounded-lg shadow-lg transform transition-all duration-300 hover:bg-white/30 hover:scale-105" data-batch="affiliated">
+                        Affiliated Batch
+                    </button>
+                    <button class="batch-btn bg-white/20 backdrop-blur-md text-white font-semibold text-lg py-6 px-4 rounded-lg shadow-lg transform transition-all duration-300 hover:bg-white/30 hover:scale-105" data-batch="standalone">
+                        Standalone Batch
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2: Password Prompt --><div id="password-prompt" class="w-full hidden">
+                <button id="back-btn" class="flex items-center text-white/80 hover:text-white transition-all mb-6 group">
+                    <i data-lucide="arrow-left" class="h-5 w-5 mr-2 transition-transform duration-200 group-hover:-translate-x-1"></i>
+                    Back to batch selection
+                </button>
+                <h1 class="text-4xl font-bold text-white mb-4" id="batch-title">Enter Password</h1>
+                <p class="text-xl text-white/80 mb-10">Please enter the password for your batch.</p>
+                
+                <form id="login-form" class="space-y-6">
+                    <div>
+                        <label for="password" class="sr-only">Password</label>
+                        <input type="password" id="password" class="block w-full text-center text-lg px-4 py-4 rounded-lg border-2 border-white/50 bg-white/20 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white focus:border-white" placeholder="Enter password...">
+                    </div>
+                    <p id="error-message" class="text-red-300 text-lg hidden">Incorrect password. Please try again.</p>
+                    <button type="submit" class="w-full inline-flex items-center justify-center px-8 py-4 rounded-lg bg-white text-blue-600 font-bold text-lg hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-500 transform transition-all duration-300 hover:scale-105">
+                        <i data-lucide="log-in" class="mr-2 h-5 w-5"></i>
+                        Access Resources
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- 
+    ============================================================
+    MAIN RESOURCE HUB - This is hidden until login is successful
+    ============================================================
+    --><div id="resource-hub" class="max-w-7xl mx-auto p-4 md:p-8 hidden">
+
+        <!-- HEADER --><header class="mb-8 flex flex-col md:flex-row items-start md:items-center justify-between">
+            <div class="flex items-center mb-4 md:mb-0">
+                <!-- Logo in Header --><img src="https://kmukunda96.github.io/smartquiz/SMART LOGO.jpg" alt="SMART Logo" class="h-12 w-auto mr-4">
+                <div>
+                    <h1 class="text-4xl font-bold text-slate-900">Student Resource Hub</h1>
+                    <p class="text-lg text-slate-600 mt-2">Welcome! Access all your notes, materials, and resources here.</p>
+                </div>
+            </div>
+            <!-- NEW: Batch Display Area -->
+            <div class="text-left md:text-right">
+                <p class="text-sm font-medium text-slate-500">Logged in as:</p>
+                <span id="batch-display" class="text-lg font-semibold text-blue-600 bg-blue-100 py-1 px-3 rounded-full"></span>
+                <!-- NEW: Login Time Display -->
+                <p id="current-login-time" class="text-xs text-slate-500 mt-2"></p>
+                <p id="last-login-time" class="text-xs text-slate-400 mt-1"></p>
+            </div>
+        </header>
+
+        <!-- TAB NAVIGATION --><div class="mb-8 border-b border-slate-200">
+            <nav class="flex -mb-px space-x-6 overflow-x-auto" aria-label="Tabs">
+                <!-- Tab 1: Notes --><button class="tab-btn tab-active group inline-flex items-center py-4 px-1 border-b-2 border-transparent font-medium text-lg text-slate-500 hover:text-blue-500 hover:border-blue-500 whitespace-nowrap" data-tab="notes">
+                    <i data-lucide="notebook-tabs" class="mr-2 h-5 w-5"></i>
+                    Notes
+                </button>
+                
+                <!-- Tab 2: Materials --><button class="tab-btn group inline-flex items-center py-4 px-1 border-b-2 border-transparent font-medium text-lg text-slate-500 hover:text-blue-500 hover:border-blue-500 whitespace-nowrap" data-tab="materials">
+                    <i data-lucide="package" class="mr-2 h-5 w-5"></i>
+                    Materials
+                </button>
+                
+                <!-- Tab 3: Other Resources --><button class="tab-btn group inline-flex items-center py-4 px-1 border-b-2 border-transparent font-medium text-lg text-slate-500 hover:text-blue-500 hover:border-blue-500 whitespace-nowrap" data-tab="other-resources">
+                    <i data-lucide="archive" class="mr-2 h-5 w-5"></i>
+                    Other Resources
+                </button>
+            </nav>
+        </div>
+
+        <!-- TAB CONTENT PANELS --><main>
+            <!-- Panel 1: Notes --><div id="notes" class="tab-panel">
+                <h2 class="text-3xl font-semibold text-slate-800 mb-6">Class Notes</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    
+                    <!-- Card 1: Quantitative Aptitude --><div class="bg-white rounded-xl shadow-lg border border-slate-100 p-6 flex flex-col justify-between transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
+                        <div>
+                            <i data-lucide="calculator" class="h-12 w-12 text-blue-600 mb-4 bg-blue-50 p-2 rounded-lg"></i>
+                            <h3 class="text-2xl font-semibold text-slate-900 mb-2">Quantitative Aptitude</h3>
+                            <p class="text-slate-600 mb-6 text-sm">Comprehensive notes for all topics.</p>
+                        </div>
+                        <!-- EDITED: Added 'notes-link' class -->
+                        <a href="#" target="_blank" rel="noopener noreferrer" class="notes-link inline-flex items-center justify-center px-5 py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                            Open Notes <i data-lucide="arrow-right" class="ml-2 h-4 w-4"></i>
+                        </a>
+                    </div>
+                    
+                    <!-- Card 2: Logical Reasoning --><div class="bg-white rounded-xl shadow-lg border border-slate-100 p-6 flex flex-col justify-between transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
+                        <div>
+                            <i data-lucide="brain" class="h-12 w-12 text-green-600 mb-4 bg-green-50 p-2 rounded-lg"></i>
+                            <h3 class="text-2xl font-semibold text-slate-900 mb-2">Logical Reasoning</h3>
+                            <p class="text-slate-600 mb-6 text-sm">Detailed notes to enhance your analytical skills.</p>
+                        </div>
+                        <!-- EDITED: Added 'notes-link' class -->
+                        <a href="#" target="_blank" rel="noopener noreferrer" class="notes-link inline-flex items-center justify-center px-5 py-3 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                            Open Notes <i data-lucide="arrow-right" class="ml-2 h-4 w-4"></i>
+                        </a>
+                    </div>
+
+                    <!-- Card 3: General English --><div class="bg-white rounded-xl shadow-lg border border-slate-100 p-6 flex flex-col justify-between transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
+                        <div>
+                            <i data-lucide="book-open" class="h-12 w-12 text-indigo-600 mb-4 bg-indigo-50 p-2 rounded-lg"></i>
+                            <h3 class="text-2xl font-semibold text-slate-900 mb-2">General English</h3>
+                            <p class="text-slate-600 mb-6 text-sm">Grammar, vocabulary, and comprehension notes.</p>
+                        </div>
+                        <!-- EDITED: Added 'notes-link' class -->
+                        <a href="#" target="_blank" rel="noopener noreferrer" class="notes-link inline-flex items-center justify-center px-5 py-3 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                            Open Notes <i data-lucide="arrow-right" class="ml-2 h-4 w-4"></i>
+                        </a>
+                    </div>
+                    
+                    <!-- Card 4: GK, CA and Computer Awareness --><div class="bg-white rounded-xl shadow-lg border border-slate-100 p-6 flex flex-col justify-between transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
+                        <div>
+                            <i data-lucide="globe-2" class="h-12 w-12 text-amber-600 mb-4 bg-amber-50 p-2 rounded-lg"></i>
+                            <h3 class="text-2xl font-semibold text-slate-900 mb-2">GK, CA & Computer Awareness</h3>
+                            <p class="text-slate-600 mb-6 text-sm">Stay updated with current affairs and essential knowledge.</p>
+                        </div>
+                        <!-- EDITED: Added 'notes-link' class -->
+                        <a href="#" target="_blank" rel="noopener noreferrer" class="notes-link inline-flex items-center justify-center px-5 py-3 rounded-lg bg-amber-600 text-white font-medium hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2">
+                            Open Notes <i data-lucide="arrow-right" class="ml-2 h-4 w-4"></i>
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Panel 2: Materials --><div id="materials" class="tab-panel hidden">
+                <h2 class="text-3xl font-semibold text-slate-800 mb-6">Study Materials</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    
+                    <!-- Card 1: Quantitative Aptitude --><div class="bg-white rounded-xl shadow-lg border border-slate-100 p-6 flex flex-col justify-between transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
+                        <div>
+                            <i data-lucide="calculator" class="h-12 w-12 text-blue-600 mb-4 bg-blue-50 p-2 rounded-lg"></i>
+                            <h3 class="text-2xl font-semibold text-slate-900 mb-2">Quantitative Aptitude</h3>
+                            <p class="text-slate-600 mb-6 text-sm">Supplementary materials and practice sets.</p>
+                        </div>
+                        <a href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-5 py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                            Open Materials <i data-lucide="arrow-right" class="ml-2 h-4 w-4"></i>
+                        </a>
+                    </div>
+                    
+                    <!-- Card 2: Logical Reasoning --><div class="bg-white rounded-xl shadow-lg border border-slate-100 p-6 flex flex-col justify-between transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
+                        <div>
+                            <i data-lucide="brain" class="h-12 w-12 text-green-600 mb-4 bg-green-50 p-2 rounded-lg"></i>
+                            <h3 class="text-2xl font-semibold text-slate-900 mb-2">Logical Reasoning</h3>
+                            <p class="text-slate-600 mb-6 text-sm">Practice questions and problem-solving guides.</p>
+                        </div>
+                        <a href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-5 py-3 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                            Open Materials <i data-lucide="arrow-right" class="ml-2 h-4 w-4"></i>
+                        </a>
+                    </div>
+
+                    <!-- Card 3: General English --><div class="bg-white rounded-xl shadow-lg border border-slate-100 p-6 flex flex-col justify-between transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
+                        <div>
+                            <i data-lucide="book-open" class="h-12 w-12 text-indigo-600 mb-4 bg-indigo-50 p-2 rounded-lg"></i>
+                            <h3 class="text-2xl font-semibold text-slate-900 mb-2">General English</h3>
+                            <p class="text-slate-600 mb-6 text-sm">Essays, comprehension passages, and exercises.</p>
+                        </div>
+                        <a href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-5 py-3 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                            Open Materials <i data-lucide="arrow-right" class="ml-2 h-4 w-4"></i>
+                        </a>
+                    </div>
+                    
+                    <!-- Card 4: GK, CA and Computer Awareness --><div class="bg-white rounded-xl shadow-lg border border-slate-100 p-6 flex flex-col justify-between transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
+                        <div>
+                            <i data-lucide="globe-2" class="h-12 w-12 text-amber-600 mb-4 bg-amber-50 p-2 rounded-lg"></i>
+                            <h3 class="text-2xl font-semibold text-slate-900 mb-2">GK, CA & Computer Awareness</h3>
+                            <p class="text-slate-600 mb-6 text-sm">Quizzes, facts, and essential computer knowledge.</p>
+                        </div>
+                        <a href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-5 py-3 rounded-lg bg-amber-600 text-white font-medium hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2">
+                            Open Materials <i data-lucide="arrow-right" class="ml-2 h-4 w-4"></i>
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+            
+            <!-- Panel 3: Other Resources --><div id="other-resources" class="tab-panel hidden">
+                <h2 class="text-3xl font-semibold text-slate-800 mb-6">Other Resources</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    
+                    <!-- Card 1: Quantitative Aptitude --><div class="bg-white rounded-xl shadow-lg border border-slate-100 p-6 flex flex-col justify-between transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
+                        <div>
+                            <i data-lucide="calculator" class="h-12 w-12 text-blue-600 mb-4 bg-blue-50 p-2 rounded-lg"></i>
+                            <h3 class="text-2xl font-semibold text-slate-900 mb-2">Quantitative Aptitude</h3>
+                            <p class="text-slate-600 mb-6 text-sm">External links, video lectures, and additional practice.</p>
+                        </div>
+                        <a href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-5 py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                            Open Resources <i data-lucide="arrow-right" class="ml-2 h-4 w-4"></i>
+                        </a>
+                    </div>
+                    
+                    <!-- Card 2: Logical Reasoning --><div class="bg-white rounded-xl shadow-lg border border-slate-100 p-6 flex flex-col justify-between transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
+                        <div>
+                            <i data-lucide="brain" class="h-12 w-12 text-green-600 mb-4 bg-green-50 p-2 rounded-lg"></i>
+                            <h3 class="text-2xl font-semibold text-slate-900 mb-2">Logical Reasoning</h3>
+                            <p class="text-slate-600 mb-6 text-sm">Interactive puzzles, games, and advanced problem sets.</p>
+                        </div>
+                        <a href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-5 py-3 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                            Open Resources <i data-lucide="arrow-right" class="ml-2 h-4 w-4"></i>
+                        </a>
+                    </div>
+
+                    <!-- Card 3: General English --><div class="bg-white rounded-xl shadow-lg border border-slate-100 p-6 flex flex-col justify-between transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
+                        <div>
+                            <i data-lucide="book-open" class="h-12 w-12 text-indigo-600 mb-4 bg-indigo-50 p-2 rounded-lg"></i>
+                            <h3 class="text-2xl font-semibold text-slate-900 mb-2">General English</h3>
+                            <p class="text-slate-600 mb-6 text-sm">Recommended readings, podcasts, and writing prompts.</p>
+                        </div>
+                        <a href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-5 py-3 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                            Open Resources <i data-lucide="arrow-right" class="ml-2 h-4 w-4"></i>
+                        </a>
+                    </div>
+                    
+                    <!-- Card 4: GK, CA and Computer Awareness --><div class="bg-white rounded-xl shadow-lg border border-slate-100 p-6 flex flex-col justify-between transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
+                        <div>
+                            <i data-lucide="globe-2" class="h-12 w-12 text-amber-600 mb-4 bg-amber-50 p-2 rounded-lg"></i>
+                            <h3 class="text-2xl font-semibold text-slate-900 mb-2">GK, CA & Computer Awareness</h3>
+                            <p class="text-slate-600 mb-6 text-sm">News digests, historical timelines, and coding fundamentals.</p>
+                        </div>
+                        <a href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-5 py-3 rounded-lg bg-amber-600 text-white font-medium hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2">
+                            Open Resources <i data-lucide="arrow-right" class="ml-2 h-4 w-4"></i>
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+
+        <!-- FOOTER --><footer class="mt-12 text-center text-slate-500 text-sm">
+            &copy; 2025 Your Education Site. All rights reserved.
+        </footer>
+    </div>
+    <!-- END CONTAINER -->
+    
+    <!-- JAVASCRIPT -->
+    <!-- Load Lucide Icons *before* the main script that uses it -->
+    <script src="https://unpkg.com/lucide@latest/dist/lucide.js"></script>
+
+    <script>
+        // --- 0. Disable Right Click Globally (Aggressive) ---
+        // This runs immediately as the script is parsed.
+        // This is a more robust way in addition to the <body> tag attribute.
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        window.addEventListener('contextmenu', event => event.preventDefault());
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- 0. Disable Right Click Globally (Re-affirm) ---
+            // This is redundant but ensures it's captured after DOM load as well.
+            document.addEventListener('contextmenu', event => event.preventDefault());
+            
+            // --- 1. LOGIN LOGIC ---
+            const loginOverlay = document.getElementById('login-overlay');
+            const resourceHub = document.getElementById('resource-hub');
+            const batchSelection = document.getElementById('batch-selection');
+            const passwordPrompt = document.getElementById('password-prompt');
+            const batchBtns = document.querySelectorAll('.batch-btn');
+            const backBtn = document.getElementById('back-btn');
+            const loginForm = document.getElementById('login-form');
+            const passwordInput = document.getElementById('password');
+            const errorMessage = document.getElementById('error-message');
+            const batchTitle = document.getElementById('batch-title');
+
+            let selectedBatch = ''; // Variable to store which batch was clicked
+
+            // Password constants
+            const affiliatedPassword = "IAMSMART@001";
+            const standalonePassword = "IAMsmart@225"; // Updated password for Standalone
+
+            // Show password screen
+            batchBtns.forEach(button => {
+                button.addEventListener('click', () => {
+                    
+                    // --- NEW: Request Fullscreen ---
+                    // This makes the password prompt feel more "compulsory".
+                    // We use document.documentElement to make the entire page fullscreen.
+                    // This will only work if the iframe has the 'allowfullscreen' attribute.
+                    // Make sure to enable this in your Google Site embed settings if possible.
+                    if (document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen().catch(err => {
+                            // Log error if fullscreen is denied, but continue anyway
+                            console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+                        });
+                    }
+                    // --- END NEW ---
+
+                    selectedBatch = button.getAttribute('data-batch'); // Store the selected batch
+                    const batchName = selectedBatch === 'affiliated' ? 'Affiliated Batch' : 'Standalone Batch';
+                    
+                    batchTitle.textContent = `Enter Password for ${batchName}`;
+                    batchSelection.classList.add('hidden');
+                    passwordPrompt.classList.remove('hidden');
+                    passwordInput.focus();
+                });
+            });
+
+            // Go back to batch selection
+            backBtn.addEventListener('click', () => {
+                passwordPrompt.classList.add('hidden');
+                batchSelection.classList.remove('hidden');
+                errorMessage.classList.add('hidden');
+                passwordInput.value = '';
+                selectedBatch = ''; // Clear selected batch
+            });
+
+            // Handle login form submission
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                // --- FIX: Use .value instead of .val() ---
+                const enteredPassword = passwordInput.value; 
+                let correctPassword = '';
+
+                // Determine the correct password based on the selected batch
+                if (selectedBatch === 'affiliated') {
+                    correctPassword = affiliatedPassword;
+                } else if (selectedBatch === 'standalone') {
+                    correctPassword = standalonePassword;
+                }
+
+                if (enteredPassword === correctPassword) {
+                    // SUCCESS
+                    errorMessage.classList.add('hidden');
+                    loginOverlay.style.transition = 'opacity 0.5s ease-out';
+                    loginOverlay.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        loginOverlay.classList.add('hidden');
+                        resourceHub.classList.remove('hidden');
+                        document.body.style.overflow = 'auto'; // Restore scrolling
+
+                        // --- NEW: Set Batch Display Name ---
+                        const batchDisplay = document.getElementById('batch-display');
+                        const batchName = selectedBatch === 'affiliated' ? 'Affiliated Batch' : 'Standalone Batch';
+                        batchDisplay.textContent = batchName;
+                        
+                        // --- NEW: Handle Login Times ---
+                        const now = new Date();
+                        const options = { 
+                            year: 'numeric', month: 'short', day: 'numeric', 
+                            hour: 'numeric', minute: '2-digit', hour12: true,
+                            timeZoneName: 'short'
+                        };
+                        const formattedNowString = now.toLocaleString('en-IN', options); // Using Indian locale
+
+                        // 1. Get and display last login time
+                        const lastLoginTime = localStorage.getItem('smartHubLastLogin');
+                        const lastLoginEl = document.getElementById('last-login-time');
+                        if (lastLoginTime) {
+                            lastLoginEl.textContent = `Last Login: ${lastLoginTime}`;
+                        } else {
+                            lastLoginEl.textContent = 'First login on this device';
+                        }
+
+                        // 2. Display current login time
+                        const currentLoginEl = document.getElementById('current-login-time');
+                        currentLoginEl.textContent = `Current: ${formattedNowString}`;
+
+                        // 3. Save the new login time for next visit
+                        localStorage.setItem('smartHubLastLogin', formattedNowString);
+                        
+                        // --- NEW: Set Dynamic Links for Notes ---
+                        const affiliatedNotesLink = "https://docs.google.com/document/d/1kCWI7zP_jl7nEP7iYATimWmug7VO2Ahe7wvAl5_Eu7I/edit?usp=sharing";
+                        const standaloneNotesLink = "https://docs.google.com/document/d/15kxBZRqro4E8CDas7uYcTbHlOfK6M1WHDAHfHy5SUw4/edit?usp=sharing";
+                        
+                        let targetNotesLink = '';
+                        if (selectedBatch === 'affiliated') {
+                            targetNotesLink = affiliatedNotesLink;
+                        } else if (selectedBatch === 'standalone') {
+                            targetNotesLink = standaloneNotesLink;
+                        }
+
+                        // Find all buttons with the 'notes-link' class and set their href
+                        const notesLinks = document.querySelectorAll('.notes-link');
+                        notesLinks.forEach(link => {
+                            link.setAttribute('href', targetNotesLink);
+                        });
+                        // --- END NEW ---
+
+                    }, 500); // Wait for fade-out
+
+                } else {
+                    // FAILURE
+                    errorMessage.classList.remove('hidden');
+                    // Add a shake animation for effect
+                    passwordInput.style.animation = 'shake 0.3s';
+                    setTimeout(() => passwordInput.style.animation = '', 300);
+                }
+            });
+
+            // A simple shake animation for the password input
+            const styleSheet = document.createElement("style");
+            styleSheet.type = "text/css";
+            styleSheet.innerText = `@keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-10px); }
+                75% { transform: translateX(10px); }
+            }`;
+            document.head.appendChild(styleSheet);
+
+
+            // --- 2. RESOURCE HUB LOGIC ---
+            
+            // Activate Lucide Icons
+            // This should now work as lucide.js is loaded above
+            lucide.createIcons();
+
+            // Tab Switching Logic
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            const tabPanels = document.querySelectorAll('.tab-panel');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetTab = button.getAttribute('data-tab');
+
+                    // Update button active states
+                    tabButtons.forEach(btn => {
+                        if (btn === button) {
+                            btn.classList.add('tab-active');
+                        } else {
+                            btn.classList.remove('tab-active');
+                        }
+                    });
+
+                    // Show/hide content panels
+                    tabPanels.forEach(panel => {
+                        if (panel.id === targetTab) {
+                            panel.classList.remove('hidden');
+                        } else {
+                            panel.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+
+        });
+    </script>
+</body>
+</html>
+
