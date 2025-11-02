@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Quiz Answer Sheet</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+  :root {
+    --bg-primary: #000000;
+    --bg-secondary: #0D0D0D;
+    --accent: #FFFFFF;
+    --element-bg: #2C2C2C;
+    --text-light: #f0f0f0;
+    --text-dark: #333;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg-primary);
+    font-family: 'Poppins', sans-serif;
+    color: var(--text-light);
+    overflow: hidden;
+  }
+  #app {
+    display: flex; flex-direction: column;
+    max-width: 700px; height: 100vh; margin: auto;
+    background: var(--bg-secondary);
+    border-radius: 18px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); 
+    padding: 30px 35px;
+    color: var(--text-light);
+    overflow: hidden; position: relative;
+    user-select: none;
+  }
+  h2 {
+    font-weight: 600; font-size: 24px;
+    margin-bottom: 20px; text-align: center;
+    user-select: text;
+  }
+  input[type="text"] {
+    outline: none; border-radius: 12px;
+    border: none; font-size: 18px;
+    padding: 14px 20px; width: 100%;
+    background: #fff; color: var(--text-dark);
+    font-weight: 600; margin-bottom: 20px;
+    box-sizing: border-box;
+  }
+  button {
+    background: var(--element-bg);
+    border: 2px solid #3C3C3C;
+    border-radius: 16px; font-weight: 600;
+    font-size: 18px; padding: 14px 26px;
+    color: var(--text-light); cursor: pointer;
+    transition: background-color 0.3s ease, border-color 0.3s ease; 
+    user-select: none;
+  }
+  button:disabled {
+    opacity: 0.5; background: #1A1A1A;
+    cursor: not-allowed;
+  }
+  button:hover:enabled {
+      background: #3C3C3C;
+      border-color: #5C5C5C;
+  }
+  #quizContainer, #finalResult {
+    flex: 1;
+    display: none;
+    flex-direction: column;
+    overflow-y: auto;
+    padding-bottom: 70px;
+    gap: 18px;
+  }
+  .question-block {
+    background: var(--element-bg);
+    border-radius: 14px; padding: 15px 20px;
+    user-select: text; animation: fadeInUp 0.4s ease forwards;
+  }
+  .question-block h4 {
+    margin: 0 0 10px 0; font-weight: 600; user-select: text;
+  }
+  .options {
+    display: flex; flex-wrap: nowrap; gap: 10px;
+    justify-content: space-between;
+  }
+  .options.wrap {
+    flex-wrap: wrap; /* Allow wrapping for many options */
+  }
+  .options label {
+    flex: 1 0 auto; /* Let flexbox handle sizing */
+    background: var(--bg-secondary);
+    padding: 12px 0; border-radius: 12px; text-align: center;
+    font-size: 17px; color: var(--text-light);
+    cursor: pointer; 
+    transition: background-color 0.3s ease, color 0.3s ease;
+    user-select: none;
+    border: 1px solid #3C3C3C;
+    min-width: 40px; /* Ensure small labels are still tappable */
+  }
+  input[type="radio"] { display: none; }
+  input[type="radio"]:checked + label {
+    background: var(--accent);
+    color: #000000;
+    font-weight: 700; 
+    box-shadow: 0 0 12px rgba(255,255,255,0.3);
+  }
+  #nextBtnContainer {
+    position: fixed;
+    bottom: 20px; left: 0;
+    width: 100%; background: transparent;
+    text-align: center; padding: 0 10px; z-index: 100;
+    display: none;
+    user-select: none;
+  }
+  #submitBtn, #saveBtn, #restartBtn {
+    max-width: 320px; width: 90%; margin: 0 auto; display: block;
+  }
+  #finalResult p {
+    font-size: 20px;
+    font-weight: 700;
+    text-align: center; margin-top: 15px;
+    color: var(--accent);
+    white-space: pre-line; word-wrap: break-word;
+  }
+  #answerList {
+    width: 100%;
+    background: var(--bg-primary);
+    border: 1px solid var(--element-bg);
+    border-radius: 12px;
+    padding: 15px;
+    margin: 20px 0;
+    text-align: left;
+  }
+  
+  /* Two-column layout */
+  #answerList.two-column {
+    column-count: 2;
+    column-gap: 25px;
+  }
+  .answer-item {
+    font-size: 17px;
+    font-weight: 500;
+    padding: 10px 5px;
+    border-bottom: 1px solid #2C2C2C;
+    display: flex;
+    justify-content: space-between;
+    break-inside: avoid; /* Prevents items from breaking across columns */
+  }
+  
+  .answer-item:last-child {
+    border-bottom: none;
+  }
+  .answer-item-q {
+    font-weight: 600;
+    color: var(--text-light);
+    margin-right: 15px;
+  }
+  .answer-item-s {
+    font-weight: 700;
+    color: var(--accent);
+  }
+  @keyframes fadeInUp {
+    from {opacity:0; transform:translateY(15px);}
+    to {opacity:1; transform:translateY(0);}
+  }
+  #quizContainer::-webkit-scrollbar, #finalResult::-webkit-scrollbar {
+    width: 10px;
+  }
+  #quizContainer::-webkit-scrollbar-thumb, #finalResult::-webkit-scrollbar-thumb {
+    background-color: #5C5C5C;
+    border-radius: 10px;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="nameScreen">
+    <h2>Enter Your Full Name</h2>
+    <input type="text" id="studentName" placeholder="Your Name" autocomplete="off" />
+    <button id="nameSubmitBtn" disabled>Next</button>
+  </div>
+
+  <div id="quizContainer">
+    <h2 id="quizTitle">Answer Sheet</h2>
+    <form id="quizForm" autocomplete="off"></form>
+  </div>
+
+  <div id="nextBtnContainer">
+    <button id="submitBtn" aria-label="Submit Quiz" disabled>Submit</button>
+  </div>
+
+  <div id="finalResult">
+    <h2>Performance Summary</h2>
+    <p id="resultText" aria-live="polite"></p>
+    <div id="answerList"></div>
+    <button id="saveBtn">Save as PNG</button>
+    <button id="restartBtn" style="margin-top: 10px;">Restart</button>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+  
+  // --- CUSTOMIZED SECTION ---
+  const QUIZ_TOPIC = "Pair of Numbers";
+  const TOTAL_QUESTIONS = 10;
+  const NUM_OPTIONS = 5;
+  // --- END CUSTOMIZATION ---
+
+  let userSelections = [];
+  let quizStarted = false;
+
+  const nameScreen = document.getElementById('nameScreen');
+  const nameSubmitBtn = document.getElementById('nameSubmitBtn');
+  const quizContainer = document.getElementById('quizContainer');
+  const quizTitle = document.getElementById('quizTitle');
+  const quizForm = document.getElementById('quizForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const nextBtnContainer = document.getElementById('nextBtnContainer');
+  const finalResult = document.getElementById('finalResult');
+  const resultText = document.getElementById('resultText');
+  const answerList = document.getElementById('answerList');
+  const saveBtn = document.getElementById('saveBtn');
+  const restartBtn = document.getElementById('restartBtn');
+  const studentNameInput = document.getElementById('studentName');
+
+  nameSubmitBtn.disabled = true;
+  quizContainer.style.display = "none";
+  nextBtnContainer.style.display = "none";
+  finalResult.style.display = "none";
+
+  studentNameInput.addEventListener('input', () => {
+    nameSubmitBtn.disabled = studentNameInput.value.trim().length < 2;
+  });
+
+  nameSubmitBtn.onclick = async () => {
+    if (studentNameInput.value.trim().length < 2) return;
+    await openFullscreen();
+    if (document.fullscreenElement) {
+        startQuiz();
+    } else {
+        alert("Fullscreen is required to start the quiz. Please try again.");
+    }
+  };
+
+  async function openFullscreen() {
+    const el = document.documentElement;
+    if (el.requestFullscreen) {
+      try { await el.requestFullscreen(); } 
+      catch(e) { console.error("Fullscreen request failed:", e); }
+    } else if (el.mozRequestFullScreen) { el.mozRequestFullScreen(); }
+    else if (el.webkitRequestFullscreen) { el.webkitRequestFullscreen(); }
+    else if (el.msRequestFullscreen) { el.msRequestFullscreen(); }
+  }
+
+  function closeFullscreen() {
+    if (document.exitFullscreen) document.exitFullscreen();
+  }
+
+  document.addEventListener("fullscreenchange", () => {
+    if (!document.fullscreenElement && quizStarted && !finalResult.style.display.includes("flex")) {
+      alert("Fullscreen exited. Returning to name entry.");
+      restartQuiz();
+    }
+  });
+
+  function startQuiz() {
+    quizStarted = true;
+    nameScreen.style.display = "none";
+    quizContainer.style.display = "flex";
+    nextBtnContainer.style.display = "block";
+    finalResult.style.display = "none";
+    userSelections = [];
+    loadQuiz();
+  }
+
+  function restartQuiz() {
+    quizStarted = false;
+    nameScreen.style.display = "block";
+    quizContainer.style.display = "none";
+    nextBtnContainer.style.display = "none";
+    finalResult.style.display = "none";
+    answerList.classList.remove('two-column'); // Clear class on restart
+    studentNameInput.value = "";
+    closeFullscreen();
+  }
+
+  function loadQuiz() {
+    quizForm.innerHTML = "";
+    
+    for (let i = 0; i < TOTAL_QUESTIONS; i++) {
+      const qNum = i + 1;
+      const qBlock = document.createElement('div');
+      qBlock.classList.add('question-block');
+      
+      let optionsHTML = '';
+      for (let j = 0; j < NUM_OPTIONS; j++) {
+        const optionLetter = String.fromCharCode(65 + j); // A, B, C...
+        optionsHTML += `
+          <input type="radio" id="q${qNum}${optionLetter}" name="q${qNum}" value="${optionLetter}" />
+          <label for="q${qNum}${optionLetter}">${optionLetter}</label>
+        `;
+      }
+      
+      // Add 'wrap' class if more than 6 options
+      const optionsClass = NUM_OPTIONS > 6 ? 'options wrap' : 'options';
+      
+      qBlock.innerHTML = `
+        <h4>Question ${qNum}</h4>
+        <div class="${optionsClass}">${optionsHTML}</div>`;
+      
+      quizForm.appendChild(qBlock);
+    }
+    
+    // Dynamically set flex-basis for 6 or fewer options
+    if (NUM_OPTIONS <= 6) {
+        const basis = 100 / NUM_OPTIONS - 2; // Calculate % basis minus gap
+        document.querySelectorAll('.options label').forEach(label => {
+            label.style.flexBasis = `${basis}%`;
+        });
+    }
+
+    quizContainer.scrollTop = 0;
+    submitBtn.disabled = true;
+    
+    [...quizForm.querySelectorAll('input[type="radio"]')].forEach(radio => {
+      radio.onchange = checkSubmitEnable;
+    });
+  }
+
+  function checkSubmitEnable() {
+    let allAnswered = true;
+    for (let i = 0; i < TOTAL_QUESTIONS; i++) {
+      const qNum = i + 1;
+      const radios = document.getElementsByName('q' + qNum);
+      if (![...radios].some(r => r.checked)) {
+        allAnswered = false;
+        break;
+      }
+    }
+    submitBtn.disabled = !allAnswered;
+  }
+
+  submitBtn.onclick = () => {
+    if (!document.fullscreenElement) {
+      alert("Please stay in fullscreen mode.");
+      restartQuiz();
+      return;
+    }
+    
+    userSelections = [];
+
+    for (let i = 0; i < TOTAL_QUESTIONS; i++) {
+      const qNum = i + 1;
+      const selectedRadio = [...document.getElementsByName('q' + qNum)].find(r => r.checked);
+      
+      if (selectedRadio) {
+          const value = selectedRadio.value;
+          userSelections.push({ qNum: qNum, selected: value });
+      } else {
+        alert("Please answer all questions.");
+        return; 
+      }
+    }
+    
+    showResult();
+  };
+
+  restartBtn.onclick = () => {
+    restartQuiz();
+  };
+
+  function showResult() {
+    if (!document.fullscreenElement) {
+      alert("Please enter fullscreen mode to view results fully.");
+    }
+    quizContainer.style.display = "none";
+    nextBtnContainer.style.display = "none";
+    finalResult.style.display ="flex";
+    
+    const name = studentNameInput.value.trim();
+    const submissionTime = new Date().toLocaleString();
+    
+    resultText.textContent = `Student: ${name}
+Topic: ${QUIZ_TOPIC}
+Submitted: ${submissionTime}`;
+
+    answerList.innerHTML = "";
+    
+    // Add two-column class if TOTAL_QUESTIONS > 10
+    if (TOTAL_QUESTIONS > 10) {
+      answerList.classList.add('two-column');
+    } else {
+      answerList.classList.remove('two-column');
+    }
+
+    userSelections.forEach(answer => {
+      const item = document.createElement('div');
+      item.classList.add('answer-item');
+      item.innerHTML = `
+        <span class="answer-item-q">Question ${answer.qNum}</span>
+        <span class="answer-item-s">${answer.selected}</span>
+      `;
+      answerList.appendChild(item);
+    });
+
+    finalResult.scrollTop = 0;
+  }
+
+  saveBtn.onclick = () => {
+    html2canvas(finalResult, { 
+      backgroundColor: '#0D0D0D', 
+      height: finalResult.scrollHeight,
+      windowHeight: finalResult.scrollHeight
+    }).then(canvas => {
+      const name = studentNameInput.value.trim().replace(/\s+/g, '_') || 'Quiz';
+      const topic = QUIZ_TOPIC.replace(/\s+/g, '_');
+      
+      const link = document.createElement('a');
+      link.download = `${name}_${topic}_Result.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
+  };
+</script>
+</body>
+</html>
