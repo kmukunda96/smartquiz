@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>SMART Classes Quiz — Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --bg:#f6f8fc; --panel:#ffffff; --ink:#0f1a2a; --muted:#5f6b85;
+    --primary:#2e5bff; --primary-dark:#2246c4; --ok:#10b981; --bad:#ef4444; --warn:#ef4444; --hint:#a16207;
+    --ring:#d6def4; --shadow:0 10px 30px rgba(17,24,39,.10); --r:14px;
+  }
+  html,body{height:100%;width:100%;margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,Arial,sans-serif;overflow:hidden;}
+  body.fs-lock{position:fixed; inset:0; width:100%; height:100dvh; overflow:hidden;} /* mobile FS lock */
+  .app{display:flex;flex-direction:column;min-height:100dvh;width:100%;padding-bottom:env(safe-area-inset-bottom);}
+  .top{height:64px;min-height:64px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 18px;box-sizing:border-box;box-shadow:var(--shadow);user-select:none;padding-left:calc(18px + env(safe-area-inset-left));padding-right:calc(18px + env(safe-area-inset-right));}
+  .brand{font-family:Playfair Display,Georgia,serif;font-weight:700;letter-spacing:.4px;}
+  #logo { height: 40px; vertical-align: middle; }
+  .meta{display:flex;gap:12px;align-items:center;font-weight:700;}
+  .pill{background:rgba(255,255,255,.16);padding:7px 12px;border-radius:30px;}
+  .timer-pill{border:1px solid rgba(255,255,255,.35);}
+  .stage{flex:1;display:grid;place-items:center;padding:12px;box-sizing:border-box;max-width:100vw;}
+  .board{width:min(1200px,96vw);height:calc(100dvh - 64px - 24px);background:var(--panel);border-radius:18px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px;padding:18px 20px;box-sizing:border-box;}
+  .qbar{display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-weight:700;}
+  .question{font-size:clamp(20px,2vw,32px);line-height:1.25;font-weight:800;margin:8px 0 10px 0;}
+  .scroll-area{flex:1 1 0;min-height:0;overflow-y:auto; -webkit-overflow-scrolling: touch;}
+  .options{display:grid;grid-auto-rows:minmax(56px,auto);gap:12px;margin-top:6px;}
+  .opt{position:relative;display:flex;align-items:center;padding:14px 16px;border-radius:var(--r);background:#f3f6ff;border:1.5px solid var(--ring);color:#16386f;font-weight:600;cursor:pointer;overflow:hidden;transform:translateY(10px);opacity:0;animation:slideIn .42s ease forwards;transition:background .15s,border-color .15s,transform .12s;}
+  .opt:hover{background:#e7eeff;border-color:#bcd0ff;}
+  .opt.selected{background:var(--primary);color:#fff;border-color:var(--primary);}
+  @keyframes slideIn{to{transform:translateY(0);opacity:1;}}
+  .btn{padding:12px 16px;border:none;border-radius:12px;font-weight:800;letter-spacing:.3px;cursor:pointer;transition:transform .08s ease,background .18s;user-select:none;}
+  .btn:active{transform:translateY(1px);}
+  .btn.primary{background:var(--primary);color:#fff;}
+  .btn.primary:hover{background:var(--primary-dark);}
+  .btn.ghost{background:#eef2ff;border:1.5px solid var(--ring);color:#17386e;}
+  .btn.warn{background:#ffe8e8;color:#8b1c1c;border:1.5px solid #ffd0d0;}
+  .btn.danger{background:var(--warn);color:#fff;}
+  .footer{display:flex;align-items:center;justify-content:space-between;border-top:1px dashed #e6edff;padding-top:10px;margin-top:8px;color:var(--muted);gap:10px;}
+  .left-actions,.right-actions{display:flex;gap:10px;align-items:center;}
+  .answer-area{margin-top:10px;padding-top:8px;border-top:1px solid #eef2ff;}
+  .hint{color:var(--hint);font-weight:600;margin-top:6px;}
+  .ans{color:var(--ok);font-weight:800;margin-top:6px;}
+  .perQTimer{font-weight:800;color:var(--bad);}
+  .heading{font-family:Playfair Display,Georgia,serif;font-weight:700;margin:0;}
+  .stack{display:grid;align-content:center;justify-items:center;gap:14px;}
+  .field{width:min(520px,92vw);}
+  .input{width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--ring);background:#f8faff;font-size:16px;outline:none;transition:transform 0.2s ease, box-shadow 0.2s ease;}
+  .input:focus{border-color:#9bb7ff;transform:translateY(-2px);box-shadow:0 4px 10px rgba(46,91,255,0.1);}
+  .subtitle{color:var(--muted);font-weight:600;}
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:9999;}
+  .dialog{background:#fff;border-radius:16px;padding:18px;box-shadow:var(--shadow);width:min(420px,92vw);}
+  .dialog h3{margin:0 0 8px 0;font-family:Playfair Display,Georgia,serif;}
+  #board, .scroll-area, .question, .options, .opt {
+    -webkit-user-select:none; -moz-user-select:none; -ms-user-select:none; user-select:none;
+    -webkit-touch-callout:none;
+  }
+
+  /* Mobile refinements */
+  @media (max-width:740px){
+    .top{height:56px;min-height:56px;}
+    #logo { height: 32px; }
+    .board{
+      border-radius:0;
+      height:calc(100dvh - 56px);
+      padding:12px;
+      padding-left:calc(12px + env(safe-area-inset-left));
+      padding-right:calc(12px + env(safe-area-inset-right));
+    }
+    .brand{font-size:1rem;}
+    .meta .pill{padding:6px 10px;font-size:.85rem;}
+    .question{font-size:1.12rem;line-height:1.32;}
+    .options{gap:10px;}
+    .opt{min-height:56px;padding:12px 14px;font-size:1rem;}
+    .btn{padding:12px 14px;font-size:0.98rem;border-radius:12px;}
+    .footer{
+      flex-wrap:wrap;gap:8px;
+      padding-bottom:calc(env(safe-area-inset-bottom) + 6px);
+    }
+    .left-actions,.right-actions{gap:8px;}
+    .mobile-center{
+      /* FIXED: Login screen now uses this. Set background. */
+      height:calc(100dvh - 56px);
+      display:flex;align-items:center;justify-content:center;width:100%;
+      padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);
+      background: var(--bg);
+    }
+    .stack.mobile-card{
+      background:#fff;border:1px solid var(--ring);border-radius:16px;
+      padding:16px;width:min(520px,92vw);box-shadow:var(--shadow);
+    }
+    /* FIXED: This rule is no longer needed */
+    /* .login-field { height: calc(100dvh - 56px); } */
+  }
+  @media (max-width:420px){
+    .board{
+      padding:10px 10px;
+      padding-left:calc(10px + env(safe-area-inset-left));
+      padding-right:calc(10px + env(safe-area-inset-right));
+    }
+    .question{font-size:1.06rem;}
+    .opt{min-height:54px;padding:12px;font-size:0.98rem;}
+    .btn{width:calc(50% - 6px);}
+    .left-actions .btn, .right-actions .btn{width:auto;}
+    .meta .pill{font-size:.8rem;padding:5px 8px;}
+  }
+
+  /* FIXED: Simplified Login animation styles */
+  .btn.primary.login-cta{position:relative;overflow:hidden;}
+  .btn.primary.login-cta.valid::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 0%,rgba(255,255,255,.35) 15%,transparent 30%);transform:translateX(-120%);animation:shimmer 1.8s ease-in-out infinite;}
+  @keyframes shimmer{60%{transform:translateX(120%);}100%{transform:translateX(120%);}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="top">
+    <div class="brand">
+      <img src="https://raw.githubusercontent.com/kmukunda96/smartquiz/main/SMART%20LOGO.jpg" alt="SMART Classes Logo" id="logo">
+    </div>
+    <div class="meta" id="topMeta"></div>
+  </div>
+  <div class="stage"><div class="board" id="board"></div></div>
+</div>
+
+<div class="scrim" id="gateScrim">
+  <div class="dialog">
+    <h3>Stay Focused</h3>
+    <div id="gateTask" class="subtitle" style="margin-bottom:10px;"></div>
+    <input id="gateAns" class="input" placeholder="Enter answer"/>
+    <button class="btn primary" style="margin-top:10px;width:100%;" onclick="checkGate()">Continue Test</button>
+  </div>
+</div>
+
+<div class="scrim" id="submitScrim">
+  <div class="dialog">
+    <h3>Submit Quiz?</h3>
+    <div class="subtitle">Once submitted, answers cannot be changed.</div>
+    <div style="display:flex;gap:10px;margin-top:12px;justify-content:flex-end;">
+      <button class="btn ghost" onclick="hideSubmit()">Cancel</button>
+      <button class="btn danger" onclick="doSubmit()">Submit</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Strong right-click/selection blocking
+  (function secureBlock(){
+    const kill = e => { e.preventDefault(); e.stopPropagation(); return false; };
+    ['contextmenu','copy','cut','dragstart','selectstart'].forEach(evt=>document.addEventListener(evt, kill, true));
+    document.addEventListener('mousedown', e => { if(e.button===2) kill(e); }, true);
+    document.addEventListener('pointerdown', e => { if(e.button===2) kill(e); }, true);
+    
+    document.addEventListener('keydown', e => { 
+        const k=e.key.toLowerCase(); 
+        if((e.ctrlKey||e.metaKey)&&['c','x','s','u','p','a'].includes(k)) kill(e); 
+        if(k==='f12') kill(e);
+        const isQuizContext = (mode === 'timer' || mode === 'results' || mode === 'review');
+        if(k === 'escape' && isQuizContext) {
+            kill(e);
+            ensureFullscreen();
+            if(mode === 'timer' && !isGateOpen) openGate();
+        }
+    }, true);
+
+    let t=null; document.addEventListener('touchstart', e=>{ t=setTimeout(()=>kill(e),400); }, {passive:false,capture:true}); document.addEventListener('touchend', ()=>clearTimeout(t), {capture:true});
+  })();
+
+  /* =========================================
+     --- QUESTION DATABASE STARTS HERE ---
+     ========================================= */
+  const questions = [
+    {q:"In a code language if FRIDGE is written as GTLHLK, then in the same language, how will you write the word KETTLE?", options:["WQLGXK","LGWXQK","GLXWQK","XKWQLG"], answer:1},
+    {q:"If DRIVER = 12, PEDESTRIAN = 20, ACCIDENT = 16, then CAR = ?", options:["3","6","8","10"], answer:1},
+    {q:"If in a certain language, MIRACLE is coded as NKUEHRL, then how is GAMBLE coded in that language?", options:["JDOCMF","CLEMNK","HCPFQK","AELGMN"], answer:2},
+    {q:"If WORK is coded as 4-12-9-16, then how will you code WOMAN?", options:["4-12-14-26-13","4-26-14-13-12","23-12-26-14-13","23-15-13-1-14"], answer:0},
+    {q:"If RESIGN is coded as 5 and BELOVED as 6, then what is the code for PARLIAMENT?", options:["6","8","9","5"], answer:2},
+    {q:"IF BE QUICK is coded as ZCOSGAI, then the code of the last letter of the third word in the sentence I LOVE MY COUNTRY is", options:["A","T","U","W"], answer:3},
+    {q:"If BIHAR can be coded as CKICS, how would you code GUJARAT?", options:["UGAJTAR","HWKCSCU","FTIZQZS","HVKBSBU"], answer:1},
+    {q:"If TRUTH is coded as SUQSTVSUGI, then the code for FALSE will be", options:["EGZBKMRDE","EGZKMRTDE","EGZBKMRTDF","FGZBKNRTDF"], answer:2},
+    {q:"In a certain code, BASIC is written as DDULE. How is LEADER written in that code?", options:["NGCFGT","NHCGGU","OGDFHT","OHDGHU"], answer:1},
+    {q:"If ROSE is coded as SOTF, DOME is coded as EONF and BIRD is coded as CISE, how would you code DIED?", options:["IDDE","EIFE","EJGF","CHDC"], answer:1},
+    {q:"In a certain code, SPRING is written as UNUFRC. How will the word MOBILE be written in that code?", options:["KQEFPA","OMDGNC","OMDGPA","OMEFPA"], answer:3},
+    {q:"If DEFENCE is coded as 45651435, then how will ARMY be coded?", options:["4181220","1181325","1171225","2151325"], answer:1},
+    {q:"If O = 16, FOR = 42, then what is FRONT equal to?", options:["61","65","73","78"], answer:3},
+    {q:"If TEMPLE is code as ELPMET, then how will CHURCH be coded as?", options:["HCURCH","HCRUHC","HCRUCH","HCURHC"], answer:1},
+    {q:"If in a certain code, BELIEF is written as AFKKDI. How is SELDOM written in that code?", options:["RDKCNL","RFKENM","RFKFNP","TFKENP"], answer:2}
+  ];
+  /* --- QUESTION DATABASE ENDS HERE --- */
+
+  const board=document.getElementById('board'), topMeta=document.getElementById('topMeta');
+  const gateScrim=document.getElementById('gateScrim'), submitScrim=document.getElementById('submitScrim');
+  let user="", mode="", q=0, selected=-1;
+  let results=[], perTimes=[], perStop={}, perStart={}, perInt={};
+  let mainTimer=null, practiceWatch=null, practiceElapsed=0;
+  let gateA=0, gateB=0, isGateOpen=false;
+  let fullscreenCheckInterval = null;
+
+  async function ensureFullscreen(){
+    document.body.classList.add('fs-lock');
+    const el=document.documentElement;
+    try{ if(!document.fullscreenElement && el.requestFullscreen) await el.requestFullscreen(); }catch(e){}
+  }
+
+  function pauseAllTimers() {
+    if (mainTimer) { clearInterval(mainTimer); mainTimer = null; }
+    if (practiceWatch) { clearInterval(practiceWatch); practiceWatch = null; }
+    pausePerStopwatch(q);
+  }
+
+  function resumeAllTimers() {
+    if (mode === 'timer' && !practiceWatch) {
+      practiceWatch = setInterval(() => {
+        practiceElapsed++;
+        const el = document.getElementById('swPill');
+        if (el) el.textContent = 'Stopwatch: ' + fmt(practiceElapsed);
+      }, 1000);
+    }
+    startPerStopwatch();
+  }
+   
+  document.addEventListener('fullscreenchange', () => {
+    const isQuizActive = mode === 'timer';
+    if (document.fullscreenElement && isQuizActive) {
+      if (!isGateOpen) {
+          resumeAllTimers();
+      }
+    } else if (!document.fullscreenElement) {
+      if (isQuizActive) {
+          openGate(); 
+      } else if (mode === 'results' || mode === 'review') {
+          ensureFullscreen(); 
+      }
+    }
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    const isQuizActive = mode === 'timer';
+    if (document.visibilityState === 'hidden' && isQuizActive && !isGateOpen) {
+        openGate(); 
+    } else if (document.visibilityState === 'visible' && isQuizActive && !isGateOpen) {
+        openGate();
+    }
+  });
+
+  function openGate(){
+    if (isGateOpen) return;
+    isGateOpen = true;
+    pauseAllTimers();
+    gateA = 100 + Math.floor(Math.random()*900);
+    gateB = Math.floor(Math.random()*900);
+    if(gateB>=gateA) gateB = Math.floor(gateA/2);
+    document.getElementById('gateTask').textContent = `Solve to continue: ${gateA} - ${gateB} = ?`;
+    document.getElementById('gateAns').value = "";
+    gateScrim.style.display='flex';
+  }
+
+  function checkGate(){
+    const val = Number(document.getElementById('gateAns').value.trim());
+    if(val === (gateA - gateB)){ 
+      gateScrim.style.display='none'; 
+      isGateOpen = false;
+      ensureFullscreen(); 
+      resumeAllTimers();
+    }
+    else { alert('Incorrect, try again.'); }
+  }
+
+  function renderTopMeta(){
+    const label = mode === 'timer' ? 'Stopwatch Mode' : '—';
+    const timePill = mode === 'timer' ? `<span class="pill timer-pill" id="swPill">Stopwatch: ${fmt(practiceElapsed)}</span>` : '';
+    topMeta.innerHTML = `<span class="pill">${label}</span>${timePill}`;
+  }
+  function fmt(secs){ const m=Math.floor(secs/60), s=secs%60; return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
+
+  // FIXED: Rewritten loginView function
+  function loginView(){
+    mode=""; renderTopMeta();
+    board.innerHTML = `
+      <div class="mobile-center">
+        <div class="stack mobile-card">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.8; margin-bottom: 8px;">
+             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L8 12v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1h-2v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="url(#grad)"/>
+             <defs><linearGradient id="grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#89f7fe" /><stop offset="100%" stop-color="#66a6ff" /></linearGradient></defs>
+          </svg>
+          <h2 class="heading" style="margin:0;">Welcome to SMART Classes</h2>
+          <div class="subtitle" style="margin-bottom:14px;">Sign in to begin the quiz</div>
+          <div class="field" style="width:100%"><input id="name" class="input" placeholder="Student name" autocomplete="off"></div>
+          <div class="field" style="width:100%"><input id="pass" class="input" type="password" placeholder="Password"></div>
+          <button id="loginBtn" class="btn primary login-cta" style="width:100%; margin-top:8px;" onclick="doLogin()">Login</button>
+        </div>
+      </div>`;
+    ensureFullscreen();
+    
+    // Bind listeners for login button validation
+    const nameEl = document.getElementById('name'), passEl = document.getElementById('pass'), btn = document.getElementById('loginBtn');
+    const toggle = ()=>{ if(nameEl.value.trim().length>1 && passEl.value.trim().length>=3) btn.classList.add('valid'); else btn.classList.remove('valid'); };
+    nameEl.addEventListener('input', toggle); passEl.addEventListener('input', toggle);
+  }
+
+  function doLogin(){
+    const n=document.getElementById('name').value.trim(), p=document.getElementById('pass').value;
+    if(!n) return alert('Enter name');
+    // PASSWORD CHECK - CHANGE '214214214' IF NEEDED
+    if(p!=='214214214') return alert('Incorrect password');
+    user=n; deviceView();
+  }
+
+  function deviceView(){
+    mode=""; renderTopMeta();
+    board.innerHTML = `
+      <div class="mobile-center">
+        <div class="stack mobile-card">
+          <h2 class="heading">Choose Device</h2>
+          <div class="field" style="display:grid;gap:12px;">
+            <button class="btn primary" onclick="initiateMobileMode()">Mobile</button>
+            <button class="btn ghost" onclick="setDevice('desktop')">Computer / Laptop</button>
+            <button class="btn warn" onclick="loginView()">Back</button>
+          </div>
+        </div>
+      </div>`;
+    ensureFullscreen();
+  }
+   
+  function initiateMobileMode() {
+      ensureFullscreen();
+      if (fullscreenCheckInterval) clearInterval(fullscreenCheckInterval);
+      board.innerHTML = `
+        <div class="mobile-center">
+          <div class="stack mobile-card">
+            <h2 class="heading">Activating Fullscreen...</h2>
+            <div class="subtitle">Please allow fullscreen to begin the quiz. The test will start automatically.</div>
+          </div>
+        </div>`;
+      let attempts = 0;
+      fullscreenCheckInterval = setInterval(() => {
+        if (document.fullscreenElement) {
+          clearInterval(fullscreenCheckInterval);
+          modeView();
+        } else {
+          attempts++;
+          if (attempts > 20) { // Timeout after 5 seconds
+            clearInterval(fullscreenCheckInterval);
+            board.innerHTML = `
+              <div class="mobile-center">
+                <div class="stack mobile-card">
+                  <h2 class="heading">Fullscreen Required</h2>
+                  <div class="subtitle" style="text-align:center; margin-bottom:12px;">You must enable fullscreen mode to take the quiz on a mobile device.</div>
+                  <button class="btn primary" onclick="initiateMobileMode()">Retry</button>
+                  <button class="btn ghost" onclick="deviceView()">Go Back</button>
+                </div>
+              </div>`;
+          }
+        }
+      }, 250);
+  }
+
+  function setDevice(deviceType){
+      if (deviceType === 'desktop') {
+          ensureFullscreen();
+          modeView();
+      }
+  }
+
+  function modeView(){
+    mode=""; renderTopMeta();
+    board.innerHTML = `
+      <div class="mobile-center">
+        <div class="stack mobile-card">
+          <h2 class="heading">Select Mode</h2>
+          <div class="field" style="display:grid;gap:12px;">
+            <button class="btn primary" onclick="start('timer')">Start Quiz (Stopwatch)</button>
+          </div>
+        </div>
+      </div>`;
+    ensureFullscreen();
+  }
+
+  function start(m){
+    mode=m; q=0; selected=-1; results=[]; perTimes=[]; perStop={}; perStart={};
+    clearInterval(mainTimer); clearInterval(practiceWatch);
+    if(mode==='timer'){
+      practiceElapsed=0; 
+      renderTopMeta();
+    }
+    renderQuestion(); 
+    ensureFullscreen();
+  }
+
+  function startPerStopwatch(){
+    if (perInt[q] || isGateOpen) return;
+    if(perStop[q]==null) perStop[q]=0;
+    perStart[q]=Date.now();
+    perInt[q]=setInterval(()=>{
+      const sec = Math.floor((Date.now()-perStart[q])/1000) + (perStop[q]||0);
+      const el=document.getElementById('perTimer');
+      if(el) el.textContent='Q stopwatch: '+fmt(sec);
+    },500);
+  }
+  function pausePerStopwatch(i){
+    if(perStart[i]){ perStop[i]=(perStop[i]||0)+Math.floor((Date.now()-perStart[i])/1000); perStart[i]=null; }
+    if(perInt[i]){ clearInterval(perInt[i]); perInt[i]=null; }
+  }
+
+  function renderQuestion(){
+    if(q>=questions.length){ submitConfirm(); return; }
+    
+    selected = (results[q] && results[q].pick !== undefined) ? results[q].pick : -1;
+    const d=questions[q];
+    const opts = d.options.map((t,i)=>{
+        const isSelected = (i === selected) ? ' selected' : '';
+        const animDelay = (results[q] ? 0 : i*60); 
+        return `<div class="opt${isSelected}" style="animation-delay:${animDelay}ms" id="opt${i}" onclick="pick(${i})">${t}</div>`
+    }).join('');
+
+    board.innerHTML = `
+      <div class="qbar">
+        <div>Question ${q+1} / ${questions.length}</div>
+        <div class="perQTimer" id="perTimer">Q stopwatch: 00:00</div>
+      </div>
+      <div class="scroll-area" id="quizScroll">
+        <div class="question">${d.q}</div>
+        <div class="options">${opts}</div>
+        <div class="answer-area" style="margin-bottom:14px;">
+          <div class="ans" id="ansBox" style="display:none;"></div>
+          <div class="hint" id="hintBox" style="display:none;"></div>
+        </div>
+      </div>
+      <div class="footer">
+        <div class="left-actions">
+          <button class="btn ghost" onclick="prev()" ${q===0?'disabled style="opacity:0.5"':''}>Previous</button>
+          <button class="btn warn" onclick="skip()">Skip</button>
+        </div>
+        <div class="right-actions">
+          <button class="btn primary" onclick="next()">Next</button>
+          <button class="btn danger" onclick="submitConfirm()">Submit</button>
+        </div>
+      </div>`;
+    
+    resumeAllTimers();
+    const sc = document.getElementById('quizScroll'); if(sc){ sc.style.paddingBottom = '84px'; }
+    (function bindLocalGuards(){
+      const kill = e => { e.preventDefault(); e.stopPropagation(); return false; };
+      const nodes = [document.getElementById('perTimer'), ...Array.from(document.querySelectorAll('.question, .options, .opt'))];
+      nodes.forEach(n=>{
+        if(!n) return;
+        ['contextmenu','copy','cut','dragstart','selectstart'].forEach(evt=> n.addEventListener(evt, kill, true));
+        n.addEventListener('mousedown', e=>{ if(e.button===2) kill(e); }, true);
+        n.addEventListener('pointerdown', e=>{ if(e.button===2) kill(e); }, true);
+      });
+    })();
+  }
+
+  function pick(i){
+    selected=i;
+    for(let k=0;k<questions[q].options.length;k++){
+      const el=document.getElementById('opt'+k);
+      if(el) el.classList.remove('selected');
+    }
+    const cur=document.getElementById('opt'+i); if(cur) cur.classList.add('selected');
+  }
+  function showAnswer(){ if(selected<0){ alert('Select an option first'); return; } const d=questions[q]; const box=document.getElementById('ansBox'); box.style.display='block'; box.textContent='Correct answer: '+d.options[d.answer]; }
+  function showHint(){ const d=questions[q]; if(d.hint) { const box=document.getElementById('hintBox'); box.style.display='block'; box.textContent='Hint: '+d.hint; } }
+
+  function prev(){ 
+      if(q===0) return; 
+      perTimes[q]=perStop[q]||0;
+      if (selected !== -1) {
+           results[q]={pick:selected, correct:(selected===questions[q].answer)};
+      } else if (!results[q]) {
+           results[q]={pick:-1, correct:false};
+      }
+      pausePerStopwatch(q); 
+      q--; 
+      renderQuestion(); 
+  }
+
+  function skip(){ recordAndGo(-1); }
+  function next(){ recordAndGo(selected); }
+
+  function recordAndGo(choice){
+    pausePerStopwatch(q);
+    perTimes[q]=perStop[q]||0;
+    results[q]={pick:choice, correct:(choice===questions[q].answer)};
+    q++; renderQuestion();
+  }
+
+  function submitConfirm(){ submitScrim.style.display='flex'; }
+  function hideSubmit(){ submitScrim.style.display='none'; }
+  function doSubmit(){
+    hideSubmit();
+    pauseAllTimers();
+    Object.keys(perInt).forEach(i=>{ if(perInt[i]) clearInterval(perInt[i]); });
+    for(let i=0;i<questions.length;i++){
+      if(perTimes[i]==null){ if(perStart[i]) pausePerStopwatch(i); perTimes[i]=perStop[i]||0; }
+      if(results[i]==null) results[i]={pick:-1, correct:false};
+    }
+    mode = 'results';
+    resultView();
+  }
+
+  function getFeedbackMessage(accuracy, name) {
+    let messages;
+    if (accuracy >= 90) {
+      messages = [
+        `Outstanding work, ${name}! You have a sharp mind for this. Keep up the brilliant effort!`,
+        `Exceptional performance, ${name}! Your dedication is clearly paying off. A truly impressive score!`,
+        `Top-tier results, ${name}! You've mastered these concepts. Fantastic job!`
+      ];
+    } else if (accuracy >= 70) {
+      messages = [
+        `Great job, ${name}! You're well on your way to mastery. A little more practice and you'll be unstoppable!`,
+        `This is a strong performance, ${name}! You have a solid understanding. Keep pushing forward!`,
+        `Very well done, ${name}! You're grasping the key ideas. Let's aim for perfection next time!`
+      ];
+    } else if (accuracy >= 50) {
+        messages = [
+        `Solid effort, ${name}! You've built a good foundation. Consistent practice is the key to climbing higher!`,
+        `A good start, ${name}! Every expert was once a beginner. Keep reviewing and you'll see great progress!`,
+        `You're on the right track, ${name}! You've got the basics down. Let's build on this momentum.`
+      ];
+    } else {
+      messages = [
+        `The first step is always the most important, ${name}. Great job for taking on the challenge! Let's review and try again.`,
+        `Every attempt is a learning opportunity, ${name}. You've got this! Let's go over the concepts together.`,
+        `Thanks for giving it your best shot, ${name}! Persistence is everything. Let's build up from here.`
+      ];
+    }
+    const randomIndex = Math.floor(Math.random() * messages.length);
+    return messages[randomIndex];
+  }
+
+  function drawGauge(id,val,label){
+    const c=document.getElementById(id),ctx=c.getContext('2d'),w=c.width,h=c.height,r=Math.min(w,h)/2-8,cx=w/2,cy=h-8;
+    ctx.clearRect(0,0,w,h);
+    ctx.lineWidth=14; ctx.strokeStyle='#e9eefc'; ctx.beginPath(); ctx.arc(cx,cy,r,Math.PI,2*Math.PI); ctx.stroke();
+    const ang=Math.PI+(val/100)*Math.PI; ctx.strokeStyle='#2e5bff'; ctx.beginPath(); ctx.arc(cx,cy,r,Math.PI,ang); ctx.stroke();
+    ctx.fillStyle='#0f1a2a'; ctx.font='700 18px Inter'; ctx.textAlign='center'; ctx.fillText(val+'%',cx,cy-6);
+    ctx.fillStyle='#5f6b85'; ctx.font='600 12px Inter'; ctx.fillText(label,cx,cy+18);
+  }
+  function drawBar(id,percent){
+    const c=document.getElementById(id),ctx=c.getContext('2d'),w=c.width,h=c.height;
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle='#e9eefc'; ctx.fillRect(0,h/2-10,w,20);
+    ctx.fillStyle='#10b981'; ctx.fillRect(0,h/2-10,Math.max(0,Math.min(w,Math.round((percent/100)*w))),20);
+  }
+  function drawHistogram(id,data){
+    const c=document.getElementById(id),ctx=c.getContext('2d'),w=c.width,h=c.height;
+    ctx.clearRect(0,0,w,h);
+    const max=Math.max(...data,1), bw=Math.max(2,Math.floor(w/data.length)-2);
+    data.forEach((v,i)=>{
+      const bh=Math.round((v/max)*(h-10));
+      ctx.fillStyle='#2e5bff22'; ctx.fillRect(i*(bw+2), h-bh, bw, bh);
+      ctx.fillStyle='#2e5bff'; ctx.fillRect(i*(bw+2), h-bh, bw, 4);
+    });
+  }
+
+  function resultView(){
+    const correct = results.filter(r=>r.correct).length, wrong = results.length - correct;
+    const accuracy = Math.round((correct/(results.length||1))*100);
+    const total = perTimes.reduce((a,b)=>a+b,0);
+    const feedback = getFeedbackMessage(accuracy, user);
+    board.innerHTML = `
+      <div class="qbar"><div class="heading" style="font-size:20px;">Results</div><div class="subtitle">Name: ${user}</div></div>
+      <div class="scroll-area" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));gap:14px; align-items: start;">
+        <div style="background:#f8fbff;border:1px solid var(--ring);border-radius:14px;padding:12px;">
+          <canvas id="scoreGauge" width="300" height="160" style="width:100%; object-fit:contain;"></canvas>
+          <div style="margin-top:10px;">
+            <div><b>Correct:</b> ${correct}</div>
+            <div><b>Wrong:</b> ${wrong}</div>
+            <div><b>Accuracy:</b> ${accuracy}%</div>
+            <div><b>Total time:</b> ${fmt(total)}</div>
+          </div>
+          <div style="border-top: 1px dashed var(--ring); margin-top: 14px; padding-top: 12px;">
+              <div style="font-weight: 700; font-family: 'Playfair Display', serif;">A quick note for you:</div>
+              <div style="color: var(--muted); margin-top: 4px; font-style: italic; font-size: 0.95rem;">"${feedback}"</div>
+          </div>
+        </div>
+        <div style="background:#fff;border:1px solid var(--ring);border-radius:14px;padding:12px;">
+          <div class="subtitle" style="margin-bottom:4px;">Per-question time histogram</div>
+          <canvas id="timeHist" width="760" height="140" style="width:1s00%; object-fit:contain;"></canvas>
+          <div style="margin-top:12px;">
+            <div style="font-weight:800;margin-bottom:6px;">Time spent per question</div>
+            <div style="max-height:240px;overflow:auto;border:1px solid #eef2ff;border-radius:10px;">
+              <table style="width:100%;border-collapse:collapse;">
+                <thead><tr style="background:#f8fbff;"><th style="text-align:left;padding:8px 8px;">Question</th><th style="text-align:left;padding:8px 8px;">Stopwatch</th></tr></thead>
+                <tbody>${results.map((r,i)=>{
+                  const time = perTimes[i];
+                  const timeDisplay = (time > 200) 
+                    ? `<span style="color:var(--bad); font-weight:700;">${fmt(time)} (Time Limit Exceeded)</span>`
+                    : fmt(time);
+                  return `<tr><td style="padding:6px 8px;border-bottom:1px solid #eef2ff;">Q${i+1}</td><td style="padding:6px 8px;border-bottom:1px solid #eef2ff;">${timeDisplay}</td></tr>`
+                }).join('')}</tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <div></div>
+        <div class="right-actions">
+          <button class="btn primary" onclick="review()">Review Answers</button>
+          <button class="btn ghost" onclick="modeView()">Back to Modes</button>
+        </div>
+      </div>`;
+    setTimeout(()=>{ drawGauge('scoreGauge', Math.max(0,Math.min(100, Math.round((correct/questions.length)*100))), 'Score'); drawHistogram('timeHist', perTimes.slice()); },0);
+  }
+
+  function review(){
+    let html='';
+    results.forEach((r,i)=>{
+      const d=questions[i];
+      const time = perTimes[i];
+      const timeDisplay = (time > 200) 
+        ? `<span style="color:var(--bad); font-weight:700;">${fmt(time)} (Time Limit Exceeded)</span>`
+        : `<span style="color:#5f6b85">${fmt(time)}</span>`;
+      
+      html += `
+        <div style="padding:10px 0;border-bottom:1px solid #eef2ff">
+          <div><b>Q${i+1}.</b> ${d.q}</div>
+          <div style="color:${r.correct? '#10b981':'#ef4444'};font-weight:800;">Your: ${r.pick>=0?d.options[r.pick]:'—'} ${r.correct?'✔️':'❌'}</div>
+          <div>Correct: ${d.options[d.answer]}</div>
+          <div>Stopwatch: ${timeDisplay}</div>
+        </div>`;
+    });
+    board.innerHTML = `
+      <div class="qbar"><div class="heading" style="font-size:20px;">Review</div><div class="subtitle">Name: ${user}</div></div>
+      <div class="scroll-area" style="max-height:100%;padding-right:4px;">${html}</div>
+      <div class="footer"><div></div><div class="right-actions"><button class="btn ghost" onclick="resultView()">Back to Results</button></div></div>`;
+    ensureFullscreen();
+  }
+
+  // Init
+  loginView();
+
+  // expose
+  window.checkGate=checkGate; window.review=review; window.modeView=modeView;
+  window.doLogin=doLogin; window.setDevice=setDevice; window.start=start;
+  window.next=next; window.prev=prev; window.skip=skip; window.showHint=showHint; window.showAnswer=showAnswer; window.pick=pick;
+  window.submitConfirm=submitConfirm; window.hideSubmit=hideSubmit; window.doSubmit=doSubmit; window.resultView=resultView;
+  window.initiateMobileMode = initiateMobileMode; window.deviceView = deviceView;
+</script>
+</body>
+</html>
