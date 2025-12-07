@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>SMART Classes Quiz — English</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#fafafa;
+    --panel:#ffffff; --ink:#262626; --muted:#8e8e8e;
+    --primary:#0095f6; --primary-dark:#0074cc; --ok:#10b981; --bad:#ed4956; --warn:#ed4956; --hint:#a16207;
+    --ring:#dbdbdb; --shadow:0 4px 12px rgba(0,0,0,.05); --r:8px;
+    --card:#fff; --card-muted:#f8fbff;
+  }
+
+  html,body{height:100%;width:100%;margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;overflow:hidden;}
+  body.fs-lock{position:fixed; inset:0; width:100%; height:100dvh; overflow:hidden;}
+
+  .app{display:flex;flex-direction:column;min-height:100dvh;width:100%;padding-bottom:env(safe-area-inset-bottom);}
+  
+  /* SPLASH SCREEN */
+  #splash {
+    position: fixed; inset: 0; background: #fff; z-index: 99999;
+    display: grid; place-items: center;
+    transition: opacity 0.4s ease, visibility 0.4s ease;
+  }
+  #splash img { width: 140px; height: auto; }
+
+  /* TOP BAR */
+  .top{height:60px;min-height:60px;background:#fff;border-bottom:1px solid #dbdbdb;display:flex;align-items:center;justify-content:space-between;padding:0 16px;padding-left:calc(16px + env(safe-area-inset-left));padding-right:calc(16px + env(safe-area-inset-right));z-index: 10;}
+  .brand{font-family:Playfair Display,Georgia,serif;font-weight:700;letter-spacing:.3px; color: #262626;}
+  #logo{height:32px;vertical-align:middle}
+  .meta{display:flex;gap:8px;align-items:center;font-weight:600; font-size: 14px;}
+  .pill{background:#efefef;padding:6px 12px;border-radius:4px;white-space:nowrap; color: #262626;}
+  .timer-pill{background: #fff; border:1px solid #dbdbdb; color: #ed4956;}
+
+  .stage{flex:1;display:grid;place-items:center;padding:10px;box-sizing:border-box;max-width:100vw;}
+  .board{width:min(1100px,96vw);min-height:calc(100dvh - 60px - 20px);background:var(--panel);border: 1px solid #dbdbdb; border-radius:3px; display:flex;flex-direction:column;gap:10px;padding:20px;box-sizing:border-box;}
+
+  /* QUIZ UI */
+  .qbar{display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-weight:600;gap:8px;flex-wrap:wrap; font-size: 14px;}
+  .question{font-size:clamp(16px,3.6vw,20px);line-height:1.4;font-weight:600;margin:12px 0 16px 0;word-break:break-word; white-space: pre-line; color: #262626;}
+  .scroll-area{flex:1 1 0;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(72px + env(safe-area-inset-bottom));}
+  
+  .options{display:grid;grid-auto-rows:minmax(48px,auto);gap:10px;margin-top:6px;}
+  .opt{position:relative;display:flex;align-items:center;padding:12px 14px;border-radius:4px;background:#fff;border:1px solid #dbdbdb;color:#262626;font-weight:400;cursor:pointer;overflow:hidden;transform:translateY(8px);opacity:0;animation:slideIn .38s ease forwards;transition:background .15s,border-color .15s,transform .12s;}
+  .opt:hover{background:#fafafa;}
+  .opt.selected{background:#efefef;border-color:#8e8e8e;font-weight: 600;}
+  @keyframes slideIn{to{transform:translateY(0);opacity:1;}}
+
+  .btn{padding:10px 16px;border:none;border-radius:4px;font-weight:600;font-size: 14px; letter-spacing:0;cursor:pointer;transition:opacity .15s ease;user-select:none;}
+  .btn:active{opacity: 0.7;}
+  .btn.primary{background:var(--primary);color:#fff;}
+  .btn.ghost{background:transparent; color:#0095f6; padding: 10px 0;}
+  .btn.ghost:hover{color:#00376b;}
+  .btn.warn{background:transparent;color:#ed4956; padding: 10px 0;}
+  .btn.danger{background:var(--warn);color:#fff;}
+
+  .footer{display:flex;align-items:center;justify-content:space-between;border-top:1px solid #dbdbdb;padding:12px 0;margin-top:8px;color:var(--muted);gap:10px;background:var(--panel);padding-bottom:calc(12px + env(safe-area-inset-bottom));}
+  .left-actions,.right-actions{display:flex;gap:16px;align-items:center;}
+
+  .answer-area{margin-top:8px;padding-top:8px;border-top:1px solid #efefef;}
+  .hint{color:var(--hint);font-weight:600;margin-top:6px;}
+  .ans{color:var(--ok);font-weight:800;margin-top:6px;}
+  .perQTimer{font-weight:600;color:var(--bad);white-space:nowrap; font-size: 13px;}
+
+  .heading{font-weight:600;margin:0;text-wrap:balance}
+  .stack{display:grid;align-content:center;justify-items:center;gap:12px;}
+  .field{width:min(520px,92vw);}
+
+  /* INSTAGRAM STYLE INPUTS */
+  .input{width:100%;padding:9px 8px;border-radius:3px;border:1px solid #dbdbdb;background:#fafafa;font-size:14px;outline:none; color: #262626;}
+  .input:focus{border-color:#a8a8a8;}
+  .input::placeholder { color: #8e8e8e; }
+  
+  .subtitle{color:var(--muted);font-weight:400; font-size: 14px;}
+
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;z-index:9999;}
+  .dialog{background:#fff;border-radius:12px;padding:24px;width:min(400px,86vw);text-align:center;}
+  .dialog h3{margin:0 0 8px 0;font-size: 18px; font-weight: 600;}
+  #board, .scroll-area, .question, .options, .opt {-webkit-user-select:none; -moz-user-select:none; -ms-user-select:none; user-select:none;-webkit-touch-callout:none;}
+
+  /* LOGIN — INSTAGRAM STYLE */
+  .login-shell{
+    display:grid;place-items:center; align-content: center;
+    min-height:calc(100dvh - 60px);
+    padding: 16px;
+    background:#fafafa;
+  }
+  .login-card{
+    width:350px; max-width: 100%;
+    background:#fff; border:1px solid #dbdbdb;
+    padding: 30px 40px; 
+    display:flex; flex-direction: column; gap:14px;
+    margin-bottom: 10px;
+  }
+  .login-logo { margin: 0 auto 12px auto; display: block; height: 50px; object-fit: contain; }
+  .pw-wrap{position:relative; display: flex; align-items: center;}
+  .pw-toggle{position:absolute;right:8px;background:transparent;border:none;color:#262626;font-weight:600;font-size:14px;cursor:pointer;opacity:1;}
+  
+  .login-aux{display:flex;align-items:center;justify-content:center; margin-top: 10px;}
+  .login-aux a{color:#00376b;text-decoration:none;font-size:12px;}
+  
+  .btn.primary.login-cta{width: 100%; border-radius: 4px; padding: 7px 16px; font-size: 14px; font-weight: 600; margin-top: 8px;}
+  .login-footnote{text-align:center;color:var(--muted);font-size:.75rem; margin-top: 12px;}
+
+  /* DASHBOARD */
+  .dash-grid{
+    display:grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap:16px;
+  }
+  .card{background:#fff;border:1px solid #dbdbdb;border-radius:3px;padding:16px;min-width:0;}
+  .kpi{display:grid;gap:4px;min-width:0}
+  .kpi .kpi-label{color:var(--muted);font-weight:600;font-size:13px;white-space:nowrap}
+  .kpi .kpi-value{color:#262626;font-weight:700;font-size:24px;line-height:1.1}
+  .kpi .kpi-sub{color:var(--muted);font-weight:400;font-size:12px}
+  .legend{display:flex;gap:12px;align-items:center;flex-wrap:wrap; font-size: 13px; color: #262626;}
+  .legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+  canvas{display:block;max-width:100%;height:auto}
+
+  .kpi-span-3 { grid-column: span 3; }
+  .gauge-span-6 { grid-column: span 6; }
+  .donut-span-6 { grid-column: span 6; }
+  .timing-span-12 { grid-column: span 12; }
+
+  @media(max-width:740px){ 
+    .dash-grid{grid-template-columns:repeat(4, minmax(0,1fr)); gap: 10px;} .top{height:54px} #logo{height:28px}
+    .kpi-span-3 { grid-column: span 2; }
+    .gauge-span-6 { grid-column: span 4; }
+    .donut-span-6 { grid-column: span 4; }
+    .timing-span-12 { grid-column: span 4; }
+    .login-card { border: none; background: transparent; padding: 20px 0; }
+    .login-shell { background: #fff; }
+  }
+
+  .visually-hidden{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,1px,1px);white-space:nowrap;border:0;}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <img src="https://raw.githubusercontent.com/kmukunda96/smartquiz/main/SMART%20LOGO.jpg" alt="SMART Classes" />
+</div>
+
+<div class="app" id="app">
+  <div class="top">
+    <div class="brand">
+      <img src="https://raw.githubusercontent.com/kmukunda96/smartquiz/main/SMART%20LOGO.jpg" alt="SMART Classes Logo" id="logo" />
+    </div>
+    <div class="meta" id="topMeta" aria-live="polite"></div>
+  </div>
+  <div class="stage"><div class="board" id="board" aria-live="polite"></div></div>
+</div>
+
+<div class="scrim" id="gateScrim" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
+  <div class="dialog">
+    <h3 id="gateTitle">Stay Focused</h3>
+    <div id="gateTask" class="subtitle" style="margin-bottom:12px;"></div>
+    <label class="visually-hidden" for="gateAns">Answer</label>
+    <input id="gateAns" class="input" placeholder="Answer" inputmode="numeric" style="text-align: center;" />
+    <button class="btn primary" style="margin-top:12px;width:100%;" onclick="checkGate()">Continue</button>
+  </div>
+</div>
+
+<div class="scrim" id="submitScrim" role="dialog" aria-modal="true" aria-labelledby="submitTitle">
+  <div class="dialog">
+    <h3 id="submitTitle">Submit Quiz?</h3>
+    <div class="subtitle" style="margin-bottom: 20px;">Once submitted, answers cannot be changed.</div>
+    <div style="display:grid; gap:8px;">
+      <button class="btn primary" onclick="doSubmit()">Submit</button>
+      <button class="btn warn" onclick="hideSubmit()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="screenshotScrim" role="dialog" aria-modal="true" aria-labelledby="screenshotTitle">
+  <div class="dialog">
+    <h3 id="screenshotTitle">Save Your Results</h3>
+    <div class="subtitle" style="margin-bottom: 20px;">Please capture a screenshot of this dashboard for your records.</div>
+    <button class="btn primary" style="width:100%;" onclick="hideScreenshotReminder()">OK</button>
+  </div>
+</div>
+
+<script>
+  // SPLASH LOGIC
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      const splash = document.getElementById('splash');
+      splash.style.opacity = '0';
+      splash.style.visibility = 'hidden';
+    }, 500); // 0.50 seconds
+  });
+
+  // Security block (unchanged)
+  (function secureBlock(){
+    const kill = e => { e.preventDefault(); e.stopPropagation(); return false; };
+    ['contextmenu','copy','cut','dragstart','selectstart'].forEach(evt=>document.addEventListener(evt, kill, true));
+    document.addEventListener('mousedown', e => { if(e.button===2) kill(e); }, true);
+    document.addEventListener('pointerdown', e => { if(e.button===2) kill(e); }, true);
+    document.addEventListener('keydown', e => {
+      const k=e.key.toLowerCase();
+      if((e.ctrlKey||e.metaKey)&&['c','x','s','u','p','a'].includes(k)) kill(e);
+      if(k==='f12') kill(e);
+      const isQuizContext = (mode === 'timer' || mode === 'results' || mode === 'review');
+      if(k === 'escape' && isQuizContext) {
+        kill(e);
+        ensureFullscreen();
+        if(mode === 'timer' && !isGateOpen) openGate();
+      }
+    }, true);
+    let t=null; document.addEventListener('touchstart', e=>{ t=setTimeout(()=>kill(e),400); }, {passive:false,capture:true}); document.addEventListener('touchend', ()=>clearTimeout(t), {capture:true});
+  })();
+
+  /* =========================================
+     --- QUESTION DATABASE STARTS HERE ---
+     English: Fill in the blanks
+     ========================================= */
+  const questions = [
+    {q:"My mother upset the kettle of boiling water and ___ her right hand badly.", options:["scorched", "burn", "woulded", "scalded"], answer:3},
+    {q:"Please do not ___ an offer made by the chairman.", options:["refuse", "deny", "refrain", "refuge"], answer:0},
+    {q:"The government is confident that the standard of living will begin to ___ again soon.", options:["rise", "lift", "flourish", "revive"], answer:0},
+    {q:"On second reading his poems strike us as singularly ___ of sublime emotions.", options:["attributive", "significative", "symptomatic", "evocative"], answer:3},
+    {q:"Health is too important to be ___ .", options:["neglected", "discarded", "dispised", "detested"], answer:0},
+    {q:"Even a ___ glance will reveal the mystery.", options:["crude", "cursory", "critical", "curious"], answer:1},
+    {q:"Like any other country India has its ___ share of superstitions.", options:["abundant", "fair", "proper", "peculiar"], answer:1},
+    {q:"Hindus believe that ___ from the cycle of birth and rebirth can be attained only by good deeds.", options:["bondage", "delivery", "deliverance", "retirement"], answer:1},
+    {q:"An employment advertisement should ___ the number of vacancies.", options:["provide", "declare", "contain", "specify"], answer:3},
+    {q:"The family gave father a gold watch on the ___ of his fifteenth birthday.", options:["time", "event", "occasion", "celebration"], answer:2},
+    {q:"The passengers were afraid but the captain ___ them that there was no danger.", options:["promised", "advised", "assured", "counselled"], answer:2},
+    {q:"It's very kind of you to ___ to speak at the meeting.", options:["comply", "agree", "accept", "concur"], answer:1},
+    {q:"I haven't seen you ___ a week.", options:["within", "since", "for", "from"], answer:2},
+    {q:"Do you know ___?", options:["where she comes from", "where does she come from", "where from she comes", "from where does she come"], answer:0},
+    {q:"The battalion operating from the mountain was able to ___ three enemy divisions.", options:["tie up", "tie down", "tie with", "tie on"], answer:1},
+    {q:"She ___ a brief appearance at the end of the party.", options:["put on", "put in", "put across", "put up"], answer:1},
+    {q:"Once he has signed the agreement, he won't be able to ___ .", options:["back up", "back in", "back at", "back out"], answer:3},
+    {q:"___ of old paintings is a job for the experts.", options:["Resurrection", "Retrieval", "Restoration", "Resumption"], answer:2},
+    {q:"The terrorists made a vain attempt to the ___ bridge.", options:["blow down", "blow up", "blow over", "blow out"], answer:1},
+    {q:"The finance minister may ___ new proposals in his budget speech.", options:["bring out", "bring forward", "bring round", "bring forth"], answer:1},
+    {q:"The main suspect in the Rajiv Gandhi assassination are still ___ .", options:["under a cloud", "at daggers drawn", "at large", "at sea"], answer:2},
+    {q:"The building was so old and dilapidated that it was not ___ .", options:["habitation", "habitat", "habitant", "habitable"], answer:3},
+    {q:"Polyster shirts are more ___ than the cotton ones.", options:["durably", "duration", "durability", "durable"], answer:3},
+    {q:"Leadership define what the future should like and ___ people with that vision.", options:["encourages", "develops", "trains", "aligns", "transforms"], answer:3},
+    {q:"We upset ourselves by responding in an ___ manner to someone else's actions.", options:["invalid", "irrational", "arduous", "arguable", "unabashed"], answer:4}
+  ];
+  /* --- QUESTION DATABASE ENDS HERE --- */
+
+  // State
+  const board=document.getElementById('board'), topMeta=document.getElementById('topMeta');
+  const gateScrim=document.getElementById('gateScrim'), submitScrim=document.getElementById('submitScrim'), screenshotScrim=document.getElementById('screenshotScrim');
+  let user="", mode="", q=0, selected=-1;
+  let results=[], perTimes=[], perStop={}, perStart={}, perInt={};
+  let mainTimer=null, practiceWatch=null, practiceElapsed=0;
+  let gateA=0, gateB=0, isGateOpen=false;
+  let fullscreenCheckInterval = null;
+
+  function ensureFullscreen(){ document.body.classList.add('fs-lock'); const el=document.documentElement; try{ if(!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen(); }catch(e){} }
+  function pauseAllTimers(){ if (mainTimer) { clearInterval(mainTimer); mainTimer = null; } if (practiceWatch) { clearInterval(practiceWatch); practiceWatch = null; } pausePerStopwatch(q); }
+  function resumeAllTimers(){ if (mode === 'timer' && !practiceWatch) { practiceWatch = setInterval(() => { practiceElapsed++; const el = document.getElementById('swPill'); if (el) el.textContent = 'Stopwatch: ' + fmt(practiceElapsed); }, 1000); } startPerStopwatch(); }
+
+  document.addEventListener('fullscreenchange', () => {
+    const isQuizActive = mode === 'timer';
+    if (document.fullscreenElement && isQuizActive) { if (!isGateOpen) resumeAllTimers(); }
+    else if (!document.fullscreenElement) { if (isQuizActive) { openGate(); } else if (mode === 'results' || mode === 'review') { ensureFullscreen(); } }
+  });
+  document.addEventListener('visibilitychange', () => {
+    const isQuizActive = mode === 'timer';
+    if (document.visibilityState === 'hidden' && isQuizActive && !isGateOpen) { openGate(); }
+    else if (document.visibilityState === 'visible' && isQuizActive && !isGateOpen) { openGate(); }
+  });
+
+  function openGate(){ if (isGateOpen) return; isGateOpen = true; pauseAllTimers(); gateA = 100 + Math.floor(Math.random()*900); gateB = Math.floor(Math.random()*900); if(gateB>=gateA) gateB = Math.floor(gateA/2); document.getElementById('gateTask').textContent = `Solve to continue: ${gateA} - ${gateB} = ?`; document.getElementById('gateAns').value = ""; gateScrim.style.display='flex'; }
+  function checkGate(){ const val = Number(document.getElementById('gateAns').value.trim()); if(val === (gateA - gateB)){ gateScrim.style.display='none'; isGateOpen = false; ensureFullscreen(); resumeAllTimers(); } else { alert('Incorrect, try again.'); } }
+  
+  function hideScreenshotReminder(){ screenshotScrim.style.display = 'none'; }
+
+  function renderTopMeta(){
+    const label = mode === 'timer' ? 'Stopwatch Mode' : '—';
+    const timePill = mode === 'timer' ? `<span class="pill timer-pill" id="swPill">Stopwatch: ${fmt(practiceElapsed)}</span>` : '';
+    topMeta.innerHTML = `<span class="pill">${label}</span>${timePill}`;
+  }
+  function fmt(secs){ const m=Math.floor(secs/60), s=secs%60; return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
+
+  // LOGIN — INSTAGRAM STYLE
+  function loginView(){
+    mode=""; renderTopMeta();
+    board.style.border = 'none'; board.style.background='transparent'; board.style.padding='0'; // Reset board for login
+    board.innerHTML = `
+      <section class="login-shell">
+        <form class="login-card" onsubmit="doLogin(); return false;" novalidate>
+          <div class="login-head">
+            <img src="https://raw.githubusercontent.com/kmukunda96/smartquiz/main/SMART%20LOGO.jpg" alt="SMART Classes" class="login-logo" />
+          </div>
+          <div>
+            <input id="name" class="input" placeholder="Username" autocomplete="username" required autofocus />
+          </div>
+          <div class="pw-wrap">
+            <input id="pass" class="input" type="password" placeholder="Password" autocomplete="current-password" required />
+            <button type="button" class="pw-toggle" id="pwToggle">Show</button>
+          </div>
+          <button id="loginBtn" class="btn primary login-cta" type="submit">Log in</button>
+          <p class="login-footnote">Use your registered name. Password is case-sensitive.</p>
+        </form>
+      </section>`;
+    
+    // Bind logic
+    const nameEl=document.getElementById('name');
+    const passEl=document.getElementById('pass');
+    const btn=document.getElementById('loginBtn');
+    const pwToggle=document.getElementById('pwToggle');
+    const toggleValid=()=>{ 
+        if(nameEl.value.trim().length>1 && passEl.value.trim().length>=3) {
+            btn.style.opacity = '1'; btn.style.cursor='pointer';
+        } else {
+            btn.style.opacity = '0.3'; btn.style.cursor='default';
+        }
+    };
+    toggleValid(); // Init state
+    nameEl.addEventListener('input', toggleValid); passEl.addEventListener('input', toggleValid);
+    pwToggle.addEventListener('click', ()=>{ const isPw = passEl.type === 'password'; passEl.type = isPw ? 'text' : 'password'; pwToggle.textContent = isPw ? 'Hide' : 'Show'; });
+  }
+  function doLogin(){ 
+      const n=document.getElementById('name').value.trim(), p=document.getElementById('pass').value; 
+      if(!n) return; 
+      if(p!=='214214214') return alert('Incorrect password'); 
+      user=n; 
+      board.style.border = ''; board.style.background=''; board.style.padding='';
+      deviceView(); 
+  }
+
+  // Device / Mode
+  function deviceView(){
+    mode=""; renderTopMeta();
+    board.innerHTML = `
+      <div class="stack" style="min-height:calc(100dvh - 140px); place-items:center; justify-items:center;">
+        <h2 class="heading" style="font-size:20px;">Choose Device</h2>
+        <div class="field" style="display:grid;gap:12px;">
+          <button class="btn primary" onclick="initiateMobileMode()">Mobile</button>
+          <button class="btn ghost" onclick="setDevice('desktop')">Computer / Laptop</button>
+          <button class="btn warn" onclick="loginView()">Back</button>
+        </div>
+      </div>`;
+  }
+  function initiateMobileMode(){ ensureFullscreen(); if (fullscreenCheckInterval) clearInterval(fullscreenCheckInterval);
+    board.innerHTML=`<div class="stack" style="min-height:calc(100dvh - 140px); place-items:center; justify-items:center;">
+      <h2 class="heading">Activating Fullscreen...</h2><div class="subtitle">Please allow fullscreen to begin the quiz.</div></div>`;
+    let attempts=0; fullscreenCheckInterval=setInterval(()=>{ if (document.fullscreenElement) { clearInterval(fullscreenCheckInterval); modeView(); } else { attempts++; if (attempts>20){ clearInterval(fullscreenCheckInterval); board.innerHTML=`<div class="stack" style="min-height:calc(100dvh - 140px); place-items:center; justify-items:center;"><h2 class="heading">Fullscreen Required</h2><div class="subtitle" style="text-align:center; margin-bottom:12px;">You must enable fullscreen mode to take the quiz.</div><button class="btn primary" onclick="initiateMobileMode()">Retry</button><button class="btn ghost" onclick="deviceView()">Go Back</button></div>`; } } },250);
+  }
+  function setDevice(deviceType){ if (deviceType==='desktop'){ ensureFullscreen(); modeView(); } }
+  
+  function modeView(){
+    mode=""; renderTopMeta();
+    board.innerHTML = `
+      <div class="stack" style="min-height:calc(100dvh - 140px); place-items:center; justify-items:center;">
+        <h2 class="heading" style="font-size:20px;">Select Mode</h2>
+        <div class="field" style="display:grid;gap:12px;">
+          <button class="btn primary" onclick="start('timer')">Start Quiz (Stopwatch)</button>
+        </div>
+      </div>`;
+  }
+
+  // QUIZ SETUP
+  function start(m){
+    mode=m; q=0; selected=-1; results=[]; perTimes=[]; perStop={}; perStart={};
+    clearInterval(mainTimer); clearInterval(practiceWatch);
+    // Show instruction view instead of rendering question immediately
+    instructionView();
+    ensureFullscreen();
+  }
+
+  // INSTRUCTION SCREEN
+  function instructionView() {
+    renderTopMeta(); // Keep the meta (Stopwatch: 00:00) visible but not running
+    board.innerHTML = `
+      <div class="stack" style="min-height:calc(100dvh - 140px); align-content:center; max-width:600px; margin:0 auto; text-align:center;">
+        <div style="margin-bottom:24px;">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="#0095f6"/>
+          </svg>
+        </div>
+        <h2 class="heading" style="font-size:22px; margin-bottom:16px;">Instructions</h2>
+        <p class="subtitle" style="font-size:16px; line-height:1.6; color:#262626;">
+          Each of the following sentences has a blank space and four words given after the sentence. Select whichever word you consider most appropriate for the blank space by clicking on the option.
+        </p>
+        <button class="btn primary" style="margin-top:32px; width:100%; padding:14px;" onclick="beginActualQuiz()">Begin Quiz</button>
+      </div>
+    `;
+  }
+
+  function beginActualQuiz() {
+    if(mode==='timer'){ practiceElapsed=0; renderTopMeta(); }
+    renderQuestion();
+  }
+
+  function startPerStopwatch(){ if (perInt[q] || isGateOpen) return; if(perStop[q]==null) perStop[q]=0; perStart[q]=Date.now(); perInt[q]=setInterval(()=>{ const sec=Math.floor((Date.now()-perStart[q])/1000)+(perStop[q]||0); const el=document.getElementById('perTimer'); if(el) el.textContent='Q stopwatch: '+fmt(sec); },500); }
+  function pausePerStopwatch(i){ if(perStart[i]){ perStop[i]=(perStop[i]||0)+Math.floor((Date.now()-perStart[i])/1000); perStart[i]=null; } if(perInt[i]){ clearInterval(perInt[i]); perInt[i]=null; } }
+
+  function renderQuestion(){
+    if(q>=questions.length){ submitConfirm(); return; }
+    selected = (results[q] && results[q].pick !== undefined) ? results[q].pick : -1;
+    const d=questions[q];
+    const opts = d.options.map((t,i)=>{ const isSelected=(i===selected)?' selected':''; const animDelay=(results[q]?0:i*60); return `<div class="opt${isSelected}" style="animation-delay:${animDelay}ms" id="opt${i}" onclick="pick(${i})">${t}</div>`; }).join('');
+    board.innerHTML = `
+      <div class="qbar">
+        <div>Question ${q+1} / ${questions.length}</div>
+        <div class="perQTimer" id="perTimer">Q stopwatch: 00:00</div>
+      </div>
+      <div class="scroll-area" id="quizScroll">
+        <div class="question">${d.q}</div>
+        <div class="options">${opts}</div>
+        <div class="answer-area">
+          <div class="ans" id="ansBox" style="display:none;"></div>
+          <div class="hint" id="hintBox" style="display:none;"></div>
+        </div>
+      </div>
+      <div class="footer">
+        <div class="left-actions">
+          <button class="btn ghost" onclick="prev()" ${q===0?'disabled style="opacity:0.5"':''}>Previous</button>
+          <button class="btn warn" onclick="skip()">Skip</button>
+        </div>
+        <div class="right-actions">
+          <button class="btn primary" onclick="next()">Next</button>
+          <button class="btn danger" onclick="submitConfirm()">Submit</button>
+        </div>
+      </div>`;
+    resumeAllTimers();
+  }
+
+  function pick(i){ selected=i; for(let k=0;k<questions[q].options.length;k++){ const el=document.getElementById('opt'+k); if(el) el.classList.remove('selected'); } const cur=document.getElementById('opt'+i); if(cur) cur.classList.add('selected'); }
+  function showAnswer(){ if(selected<0){ alert('Select an option first'); return; } const d=questions[q]; const box=document.getElementById('ansBox'); box.style.display='block'; box.textContent='Correct answer: '+d.options[d.answer]; }
+  function showHint(){ const d=questions[q]; if(d.hint){ const box=document.getElementById('hintBox'); box.style.display='block'; box.textContent='Hint: '+d.hint; } }
+  function prev(){ if(q===0) return; perTimes[q]=perStop[q]||0; if (selected !== -1) { results[q]={pick:selected, correct:(selected===questions[q].answer)}; } else if (!results[q]) { results[q]={pick:-1, correct:false}; } pausePerStopwatch(q); q--; renderQuestion(); }
+  function skip(){ recordAndGo(-1); }
+  function next(){ recordAndGo(selected); }
+  function recordAndGo(choice){ pausePerStopwatch(q); perTimes[q]=perStop[q]||0; results[q]={pick:choice, correct:(choice===questions[q].answer)}; q++; renderQuestion(); }
+
+  function submitConfirm(){ submitScrim.style.display='flex'; }
+  function hideSubmit(){ submitScrim.style.display='none'; }
+  function doSubmit(){
+    hideSubmit(); pauseAllTimers(); Object.keys(perInt).forEach(i=>{ if(perInt[i]) clearInterval(perInt[i]); });
+    for(let i=0;i<questions.length;i++){
+      if(perTimes[i]==null){ if(perStart[i]) pausePerStopwatch(i); perTimes[i]=perStop[i]||0; }
+      if(results[i]==null) results[i]={pick:-1, correct:false};
+    }
+    mode='results'; resultView();
+  }
+
+  // Charts
+  function drawGauge(id,val,label){
+    const c=document.getElementById(id); if(!c) return;
+    const ctx=c.getContext('2d'),w=c.width,h=c.height,r=Math.min(w,h)/2-8,cx=w/2,cy=h-8;
+    ctx.clearRect(0,0,w,h);
+    ctx.lineWidth=10; ctx.strokeStyle='#efefef'; ctx.beginPath(); ctx.arc(cx,cy,r,Math.PI,2*Math.PI); ctx.stroke();
+    const ang=Math.PI+(val/100)*Math.PI; ctx.strokeStyle= val>=50 ? '#10b981' : '#ed4956'; ctx.beginPath(); ctx.arc(cx,cy,r,Math.PI,ang); ctx.stroke();
+    ctx.fillStyle='#262626'; ctx.font='700 20px -apple-system'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(val+'%',cx,cy-4);
+    ctx.fillStyle='#8e8e8e'; ctx.font='400 12px -apple-system'; ctx.fillText(label,cx,cy+16);
+  }
+  function drawHistogram(id,data){
+    const c=document.getElementById(id); if(!c) return;
+    const ctx=c.getContext('2d'),w=c.width,h=c.height;
+    ctx.clearRect(0,0,w,h);
+    const max=Math.max(...data,1), bw=Math.max(2,Math.floor(w/data.length)-2);
+    data.forEach((v,i)=>{
+      const bh=Math.round((v/max)*(h-10));
+      ctx.fillStyle='rgba(0,149,246,0.2)'; ctx.fillRect(i*(bw+2), h-bh, bw, bh);
+      ctx.fillStyle='#0095f6'; ctx.fillRect(i*(bw+2), h-bh, bw, 3);
+    });
+  }
+  function drawDonut(id, segments, colors, centerMainText, centerSubText){
+    const c=document.getElementById(id); if(!c) return; const ctx=c.getContext('2d'), w=c.width, h=c.height;
+    const r=Math.min(w,h)/2-10, cx=w/2, cy=h/2;
+    ctx.clearRect(0,0,w,h);
+    const total=Math.max(1, segments.reduce((a,b)=>a+b,0));
+    let ang=-Math.PI/2; ctx.lineWidth=12;
+    segments.forEach((v,i)=>{
+      const a2=ang+(v/total)*Math.PI*2;
+      ctx.beginPath(); ctx.strokeStyle=colors[i];
+      ctx.arc(cx,cy,r,ang,a2); ctx.stroke();
+      ang=a2;
+    });
+    // Inner text
+    ctx.fillStyle='#262626'; ctx.font='700 18px -apple-system'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(centerMainText, cx, cy-6);
+    ctx.fillStyle='#8e8e8e'; ctx.font='400 11px -apple-system';
+    ctx.fillText(centerSubText, cx, cy+12);
+  }
+
+  // RESULTS
+  function resultView(){
+    const correct = results.filter(r=>r.correct).length, wrong = results.filter(r=>r.pick>=0 && !r.correct).length, skipped = results.filter(r=>r.pick<0).length;
+    const accuracy = Math.round((correct/(results.length||1))*100);
+    const total = perTimes.reduce((a,b)=>a+b,0);
+    const timesOverall = perTimes.slice();
+    const avg = timesOverall.length ? Math.round(timesOverall.reduce((a,b)=>a+b,0)/timesOverall.length) : 0;
+    const med = (()=>{ const s=[...timesOverall].sort((a,b)=>a-b), n=s.length; if(!n) return 0; return n%2? s[(n-1)/2] : Math.round((s[n/2-1]+s[n/2])/2); })();
+
+    board.innerHTML = `
+      <div class="qbar"><h2 class="heading" style="font-size:18px;">Results</h2><div class="subtitle" style="font-weight:600;">${user}</div></div>
+      <div class="scroll-area">
+        <section class="dash-grid" aria-label="Analytics">
+          <div class="card kpi kpi-span-3">
+            <div class="kpi-label">Accuracy</div><div class="kpi-value">${accuracy}%</div>
+          </div>
+          <div class="card kpi kpi-span-3">
+            <div class="kpi-label">Correct</div><div class="kpi-value">${correct}</div>
+          </div>
+          <div class="card kpi kpi-span-3">
+            <div class="kpi-label">Wrong</div><div class="kpi-value">${wrong}</div>
+          </div>
+          <div class="card kpi kpi-span-3">
+            <div class="kpi-label">Skipped</div><div class="kpi-value">${skipped}</div>
+          </div>
+
+          <div class="card gauge-span-6">
+            <h3 class="subtitle" style="margin:0 0 10px 0; font-weight:600; font-size:14px;">Score Overview</h3>
+            <canvas id="scoreGauge" width="300" height="140"></canvas>
+            <div style="margin-top:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+              <div class="kpi"><div class="kpi-label">Total time</div><div class="kpi-value" style="font-size:16px;">${fmt(total)}</div></div>
+              <div class="kpi"><div class="kpi-label">Average</div><div class="kpi-value" style="font-size:16px;">${fmt(avg)}</div></div>
+              <div class="kpi"><div class="kpi-label">Median</div><div class="kpi-value" style="font-size:16px;">${fmt(med)}</div></div>
+            </div>
+          </div>
+
+          <div class="card donut-span-6">
+            <h3 class="subtitle" style="margin:0 0 10px 0; font-weight:600; font-size:14px;">Distribution</h3>
+            <div class="legend" style="margin-bottom:12px;">
+              <span class="legend-item"><span class="legend-dot" style="background:#10b981"></span>Correct: ${correct}</span>
+              <span class="legend-item"><span class="legend-dot" style="background:#ed4956"></span>Wrong: ${wrong}</span>
+              <span class="legend-item"><span class="legend-dot" style="background:#dbdbdb"></span>Skipped: ${skipped}</span>
+            </div>
+            <canvas id="distDonut" width="220" height="140"></canvas>
+          </div>
+
+          <div class="card timing-span-12">
+            <h3 class="subtitle" style="margin:0 0 10px 0; font-weight:600; font-size:14px;">Time per Question</h3>
+            <canvas id="timeHist" width="800" height="120"></canvas>
+            <div style="margin-top:12px; overflow:auto; border:1px solid #efefef; border-radius:4px;">
+              <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                <thead><tr style="background:#fafafa; border-bottom:1px solid #dbdbdb;"><th style="text-align:left;padding:8px; font-weight:600;">#</th><th style="text-align:right;padding:8px; font-weight:600;">Time</th></tr></thead>
+                <tbody>
+                  ${results.map((r,i)=>{ const t=perTimes[i]||0; const td=(t>200)?`<span style="color:#ed4956; font-weight:600;">${fmt(t)}</span>`:fmt(t);
+                    return `<tr><td style="padding:8px;border-bottom:1px solid #efefef;">Q${i+1}</td><td style="padding:8px;text-align:right;border-bottom:1px solid #efefef;">${td}</td></tr>`;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+      <div class="footer">
+        <div></div>
+        <div class="right-actions">
+          <button class="btn primary" onclick="review()">Review</button>
+          <button class="btn ghost" onclick="modeView()">Menu</button>
+        </div>
+      </div>`;
+
+    setTimeout(()=>{
+      drawGauge('scoreGauge', Math.max(0,Math.min(100, Math.round((correct/questions.length)*100))), 'Score');
+      drawHistogram('timeHist', perTimes.slice());
+      drawDonut('distDonut', [correct, wrong, skipped], ['#10b981','#ed4956','#dbdbdb'], accuracy+'%', 'accuracy');
+      screenshotScrim.style.display = 'flex';
+    },0);
+  }
+
+  // Review
+  function review(){
+    let html='';
+    results.forEach((r,i)=>{
+      const d=questions[i];
+      const t=perTimes[i]||0;
+      const td=(t>200)?`<span style="color:#ed4956; font-weight:600;">${fmt(t)} (Limit)</span>`:`<span style="color:#8e8e8e">${fmt(t)}</span>`;
+      html += `
+        <div style="padding:16px 0;border-bottom:1px solid #efefef">
+          <div style="font-weight:600; margin-bottom:4px; font-size:14px; color:#262626;">Q${i+1}. ${d.q}</div>
+          <div style="font-size:13px; margin-top:6px;">
+            <span style="color:${r.correct? '#10b981':'#ed4956'};font-weight:600;">Your: ${r.pick>=0?d.options[r.pick]:'—'} ${r.correct?'✔️':'❌'}</span>
+            <span style="color:#262626; margin-left:12px;">Correct: <b>${d.options[d.answer]}</b></span>
+            <span style="float:right;">${td}</span>
+          </div>
+        </div>`;
+    });
+    board.innerHTML = `
+      <div class="qbar"><div class="heading" style="font-size:18px;">Review</div><div class="subtitle" style="font-weight:600;">${user}</div></div>
+      <div class="scroll-area" style="padding-right:4px;">${html}</div>
+      <div class="footer"><div></div><div class="right-actions"><button class="btn ghost" onclick="resultView()">Back</button></div></div>`;
+    ensureFullscreen();
+  }
+
+  // API
+  window.checkGate=checkGate; window.review=review; window.modeView=modeView;
+  window.doLogin=doLogin; window.setDevice=setDevice; window.start=start;
+  window.next=next; window.prev=prev; window.skip=skip; window.showHint=showHint; window.showAnswer=showAnswer; window.pick=pick;
+  window.submitConfirm=submitConfirm; window.hideSubmit=hideSubmit; window.doSubmit=doSubmit; window.resultView=resultView;
+  window.initiateMobileMode = initiateMobileMode; window.deviceView = deviceView;
+  window.hideScreenshotReminder = hideScreenshotReminder;
+  window.beginActualQuiz = beginActualQuiz; // Expose instruction button
+
+  // Init
+  loginView();
+</script>
+</body>
+</html>
