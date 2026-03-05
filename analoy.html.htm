@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>SMART Classes Quiz — Pro Performance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#f6f8fc; --panel:#ffffff; --ink:#0f1a2a; --muted:#5f6b85;
+    --primary:#2e5bff; --primary-dark:#2246c4; --ok:#10b981; --bad:#ef4444; --warn:#ef4444; 
+    --ring:#d6def4; --shadow:0 10px 30px rgba(17,24,39,.10); --r:14px;
+  }
+
+  html,body{height:100%;width:100%;margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,Arial,sans-serif; overflow: hidden;}
+  body.fs-lock{position:fixed; inset:0; width:100%; height:100dvh; overflow:hidden;}
+
+  .app{display:flex;flex-direction:column;height:100dvh;width:100%;padding-bottom:env(safe-area-inset-bottom);}
+  .top{height:56px;min-height:56px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 12px;box-shadow:var(--shadow); z-index: 10;}
+  .brand{display: flex; align-items: center; font-family: Playfair Display, serif; font-weight: 700;}
+  #logo{height:32px; border-radius: 4px; margin-right: 10px;}
+  .meta{display:flex;gap:8px;align-items:center;font-weight:700;}
+  .pill{background:rgba(255,255,255,.16);padding:5px 10px;border-radius:18px;white-space:nowrap; font-size: 0.85rem;}
+  
+  .stage{flex:1;display:grid;place-items:center;padding:10px;box-sizing:border-box;max-width:100vw; overflow: hidden;}
+  .board{width:min(1100px,96vw); height: 100%; max-height:calc(100dvh - 80px); background:var(--panel);border-radius:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px;padding:14px;box-sizing:border-box; overflow: hidden;}
+
+  .qbar{display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-weight:700;gap:8px;flex-wrap:wrap}
+  .question{font-size:clamp(18px,3.6vw,26px);line-height:1.3;font-weight:800;margin:6px 0;word-break:break-word; white-space: pre-line;}
+  .scroll-area{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding-right: 5px;}
+  .options{display:grid;grid-auto-rows:minmax(52px,auto);gap:10px;margin-top:6px;}
+  .opt{position:relative;display:flex;align-items:center;padding:12px 14px;border-radius:var(--r);background:#f3f6ff;border:1.5px solid var(--ring);color:#16386f;font-weight:600;cursor:pointer;transition: all 0.15s;}
+  .opt.selected{background:var(--primary);color:#fff;border-color:var(--primary);}
+
+  .btn{padding:12px 14px;border:none;border-radius:12px;font-weight:800;cursor:pointer; user-select:none; transition: opacity 0.2s;}
+  .btn:active { transform: translateY(1px); }
+  .btn.primary{background:var(--primary);color:#fff;}
+  .btn.ghost{background:#eef2ff;border:1.5px solid var(--ring);color:#17386e;}
+  .btn.danger{background:var(--warn);color:#fff;}
+
+  .footer{display:flex;align-items:center;justify-content:space-between;border-top:1px dashed #e6edff;padding:10px 0;margin-top:8px;background:var(--panel);}
+
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:9999;}
+  .dialog{background:#fff;border-radius:16px;padding:20px;width:min(400px,90vw); text-align: center;}
+
+  /* --- DETAILED DASHBOARD STYLES --- */
+  .dash-grid{display:grid;grid-template-columns: repeat(2, 1fr); gap:12px; margin-bottom: 20px;}
+  @media(min-width: 600px) { .dash-grid { grid-template-columns: repeat(4, 1fr); } }
+
+  .kpi-card{background:#fff; border:1px solid var(--ring); border-radius:16px; padding:12px 16px; text-align: left; box-shadow: 0 4px 10px rgba(0,0,0,0.02);}
+  .kpi-title{color:var(--muted); font-weight:700; font-size:0.85rem; margin-bottom: 4px;}
+  .kpi-val{font-weight:800; font-size:1.6rem; color:#0f172a; line-height: 1.1;}
+  .kpi-sub{color:var(--muted); font-weight:600; font-size:0.8rem; margin-top: 4px;}
+
+  .badge{display:inline-block; padding:5px 14px; border-radius:20px; font-weight:800; font-size:0.85rem; text-transform: uppercase; background:#fee2e2; color:#991b1b; margin-top: 8px;}
+  .badge.excellent{background:#d1fae5; color:#065f46;}
+
+  .section-title{font-weight:700; font-size:1.4rem; color:var(--muted); margin: 15px 0 10px 0; text-align: left;}
+  
+  canvas{display:block; max-width:100%; height:auto; margin: 0 auto;}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="top">
+    <div class="brand">
+      <img src="https://raw.githubusercontent.com/kmukunda96/smartquiz/main/SMART%20LOGO.jpg" alt="SMART Classes" id="logo" />
+      <span>SMART Classes</span>
+    </div>
+    <div class="meta" id="topMeta"></div>
+  </div>
+  <div class="stage"><div class="board" id="board"></div></div>
+</div>
+
+<div class="scrim" id="gateScrim"><div class="dialog"><h3>Security Alert</h3><div id="gateTask" style="margin:10px 0;">Solve to unlock quiz:</div><input id="gateAns" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd;" type="number" /><button class="btn primary" style="margin-top:15px;width:100%;" onclick="checkGate()">Return to Quiz</button></div></div>
+<div class="scrim" id="submitScrim"><div class="dialog"><h3>Finish Test?</h3><p>Once submitted, you cannot change answers.</p><div style="display:flex;gap:10px;margin-top:15px;"><button class="btn ghost" style="flex:1" onclick="hideSubmit()">Cancel</button><button class="btn danger" style="flex:1" onclick="doSubmit()">Submit</button></div></div></div>
+
+<script>
+  /* --- SECURITY & FULLSCREEN --- */
+  function ensureFullscreen(){ 
+    const el = document.documentElement;
+    if(!document.fullscreenElement) {
+        if(el.requestFullscreen) el.requestFullscreen();
+        else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    }
+  }
+
+  /* --- DATA & UPDATED ANSWER KEY --- */
+  const questions = [
+    {q:"1. NK : JG : : SF: ?", options:["(a) OB", "(b) UA", "(c) BU", "(d) AS"], answer:0},
+    {q:"2. RKP : VHS :: UJM : ?", options:["(a) XHQ", "(b) YHQ", "(c) XGP", "(d) YGP"], answer:3},
+    {q:"3. TALE: LETA :: WEAK: ?", options:["(a) AKWE", "(b) WAEK", "(c) AEWK", "(d) KWAE"], answer:0},
+    {q:"4. MAKE: KEMA :: CAMP: MPCA :: STAY: ?", options:["(a) TAYS", "(b) TSYA", "(c) ASYT", "(d) AYST"], answer:3},
+    {q:"5. RUBBER : BURREB :: CATTLE : ?", options:["(a) TACTLE", "(b) TACELT", "(c) ACTTEL", "(d) ELTTAC"], answer:1},
+    {q:"6. MEMBRANE: LDLAQZMD :: PRIVILEGE: ?", options:["(a) GFDHUHKDFD", "(b) HGHUHKDFD", "(c) QSHUHKDFD", "(d) OQHUHKDFD"], answer:3},
+    {q:"7. DAC: NKM PNM: ZXW. Pattern pair:", options:["(a) HIJ: EFG", "(b) GJM: QTW", "(c) POQ: STU", "(d) KHG: ADE"], answer:1},
+    {q:"8. BE: 35 :: DF: ?", options:["(a) 80", "(b) 120", "(c) 90", "(d) 50"], answer:3},
+    {q:"9. RAT: 18120 :: GOD: ?", options:["(a) 7174", "(b) 7164", "(c) 7154", "(d) 7144"], answer:2},
+    {q:"10. KP2: PK16 :: AG3: FB81 :: TR5: ?", options:["(a) YM625", "(b) MY125", "(c) MY625", "(d) YM125"], answer:0},
+    {q:"11. Rahul 12 :: Zenus: 17 :: Vinas: ?", options:["(a) 15", "(b) 13", "(c) 11", "(d) 14"], answer:1},
+    {q:"12. R+JM2$#QR?*O@7F3\nSequence R#*: J?F :: $OJ: ?", options:["(a) QF*", "(b) QF#", "(c) MOF", "(d) #@3"], answer:1}
+  ];
+
+  let user="", mode="", q=0;
+  let results=[], perTimes=[], perStop={}, perStart={}, perInt={};
+  let practiceElapsed=0, practiceWatch=null;
+  let gateA=0, gateB=0, isGateOpen=false;
+
+  const board=document.getElementById('board'), topMeta=document.getElementById('topMeta');
+
+  function loginView(){
+    board.innerHTML = `
+      <div class="stack" style="height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+        <img src="https://raw.githubusercontent.com/kmukunda96/smartquiz/main/SMART%20LOGO.jpg" style="height:60px; margin-bottom:15px; border-radius:8px;" />
+        <h2 class="heading">SMART Login Portal</h2>
+        <div style="display:grid; gap:12px; width:min(320px,90%);">
+          <input id="name" style="padding:12px; border:1px solid #ddd; border-radius:8px;" placeholder="Full Student Name" autofocus />
+          <input id="pass" style="padding:12px; border:1px solid #ddd; border-radius:8px;" type="password" placeholder="Quiz Password" />
+          <button class="btn primary" onclick="doLogin()">Proceed to Test</button>
+        </div>
+      </div>`;
+  }
+
+  function doLogin(){
+    const n=document.getElementById('name').value.trim(), p=document.getElementById('pass').value;
+    if(n && p==='214214214') { user=n; deviceView(); } else { alert('Incorrect credentials'); }
+  }
+
+  function deviceView(){
+    board.innerHTML = `
+      <div class="stack" style="height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+        <h2 class="heading">Secure Session Initiation</h2>
+        <p style="color:var(--muted); text-align:center;">Compulsory Fullscreen is active for monitoring.</p>
+        <button class="btn primary" style="width: min(300px, 90%)" onclick="initiateFullscreen()">Enter Fullscreen & Start Test</button>
+      </div>`;
+  }
+
+  function initiateFullscreen(){
+    ensureFullscreen();
+    setTimeout(() => {
+        if(document.fullscreenElement) start('timer');
+        else alert("Fullscreen required to start.");
+    }, 300);
+  }
+
+  function start(m){
+    mode=m; q=0; results=Array(questions.length).fill(null);
+    perTimes=Array(questions.length).fill(0);
+    practiceElapsed=0;
+    practiceWatch = setInterval(()=>{ 
+        practiceElapsed++; 
+        const el=document.getElementById('swPill'); 
+        if(el) el.textContent='Time: '+fmt(practiceElapsed); 
+    },1000);
+    renderQuestion();
+  }
+
+  function renderQuestion(){
+    if(q>=questions.length) { submitConfirm(); return; }
+    const d=questions[q];
+    const pickedIndex = results[q] ? results[q].pick : -1;
+    
+    board.innerHTML = `
+      <div class="qbar">
+        <div>Question ${q+1}/${questions.length}</div>
+        <div class="perQTimer" id="perTimer">Stopwatch: 00:00</div>
+      </div>
+      <div class="scroll-area">
+        <div class="question">${d.q}</div>
+        <div class="options">
+          ${d.options.map((o,i)=>`<div class="opt ${pickedIndex===i?'selected':''}" onclick="pick(${i})">${o}</div>`).join('')}
+        </div>
+      </div>
+      <div class="footer">
+        <div class="left-actions">
+          <button class="btn ghost" onclick="prev()" ${q===0?'disabled style="opacity:0.3"':''}>Previous</button>
+          <button class="btn ghost" onclick="skip()">Skip Question</button>
+        </div>
+        <div class="right-actions">
+          <button class="btn primary" onclick="next()">Next</button>
+          <button class="btn danger" onclick="submitConfirm()">Finish Test</button>
+        </div>
+      </div>`;
+    topMeta.innerHTML = `<span class="pill">${user}</span> <span class="pill" id="swPill">Time: ${fmt(practiceElapsed)}</span>`;
+    startPerStopwatch();
+  }
+
+  function startPerStopwatch(){
+    if (perInt[q] || isGateOpen) return;
+    if(perStop[q]==null) perStop[q]=0;
+    perStart[q]=Date.now();
+    perInt[q]=setInterval(()=>{
+      const sec=Math.floor((Date.now()-perStart[q])/1000)+(perStop[q]||0);
+      const el=document.getElementById('perTimer');
+      if(el) el.textContent='Stopwatch: '+fmt(sec);
+    },1000);
+  }
+
+  function pausePerStopwatch(i){
+    if(perStart[i]){ perStop[i]=(perStop[i]||0)+Math.floor((Date.now()-perStart[i])/1000); perStart[i]=null; }
+    if(perInt[i]){ clearInterval(perInt[i]); perInt[i]=null; }
+  }
+
+  function pick(i){ 
+    results[q] = {pick:i, correct:(i===questions[q].answer)};
+    renderQuestion();
+  }
+
+  function next(){ pausePerStopwatch(q); perTimes[q]=perStop[q]||0; q++; renderQuestion(); }
+  function prev(){ pausePerStopwatch(q); q--; renderQuestion(); }
+  function skip(){ results[q]={pick:-1, correct:false}; next(); }
+
+  /* SECURITY GATE */
+  function openGate(){ 
+    if (isGateOpen || mode!=="timer") return; 
+    isGateOpen=true; 
+    gateA=100+Math.floor(Math.random()*900); 
+    gateB=Math.floor(Math.random()*900); 
+    document.getElementById('gateTask').textContent=`Security Return Code: ${gateA} - ${gateB} = ?`; 
+    document.getElementById('gateScrim').style.display='flex'; 
+  }
+  function checkGate(){ 
+    if(Number(document.getElementById('gateAns').value)===(gateA-gateB)){ 
+        document.getElementById('gateScrim').style.display='none'; 
+        isGateOpen=false; 
+        ensureFullscreen(); 
+    } 
+  }
+  document.addEventListener('visibilitychange', () => { if(document.visibilityState==='hidden') openGate(); });
+  document.addEventListener('fullscreenchange', () => { if(!document.fullscreenElement) openGate(); });
+
+  function submitConfirm(){ document.getElementById('submitScrim').style.display='flex'; }
+  function hideSubmit(){ document.getElementById('submitScrim').style.display='none'; }
+  function doSubmit(){ clearInterval(practiceWatch); pausePerStopwatch(q); hideSubmit(); resultView(); }
+
+  /* --- ANALYTICS ENGINE --- */
+  function drawGauge(id,val){
+    const c=document.getElementById(id); if(!c) return; const ctx=c.getContext('2d'),w=c.width,h=c.height,r=Math.min(w,h)/2-12,cx=w/2,cy=h-12;
+    ctx.lineWidth=18; ctx.strokeStyle='#e9eefc'; ctx.beginPath(); ctx.arc(cx,cy,r,Math.PI,2*Math.PI); ctx.stroke();
+    const ang=Math.PI+(val/100)*Math.PI; ctx.strokeStyle=val>=75?'#10b981':(val>=50?'#2e5bff':'#ef4444'); ctx.beginPath(); ctx.arc(cx,cy,r,Math.PI,ang); ctx.stroke();
+    ctx.fillStyle='#0f1a2a'; ctx.font='800 24px Inter'; ctx.textAlign='center'; ctx.fillText(val+'%',cx,cy-12);
+  }
+
+  /* --- DETAILED RESULT VIEW --- */
+  function resultView(){
+    let correct=0, wrong=0, score=0;
+    results.forEach(r => { if(r && r.pick!==-1){ if(r.correct){ correct++; score+=1; } else { wrong++; score-=0.25; } } });
+    const attempted = correct + wrong;
+    const accuracy = attempted > 0 ? Math.round((correct/attempted)*100) : 0;
+    const percentage = Math.round((score/questions.length)*100);
+    const skipped = questions.length - attempted;
+    const avgSpeed = attempted > 0 ? Math.round(practiceElapsed/attempted) : 0;
+    
+    board.innerHTML = `
+      <div style="text-align:left;">
+        <h1 style="font-family:Playfair Display; font-size:2rem; margin:0;">Scorecard:</h1>
+        <h1 style="font-family:Playfair Display; font-size:2rem; margin:0; color:#4a5568;">${user}</h1>
+        <div class="badge ${percentage>=70?'excellent':''}">
+            ${percentage>=85?'Excellent':(percentage>=70?'Good Performance':(percentage>=50?'Average':'Needs Improvement'))}
+        </div>
+      </div>
+      
+      <div class="scroll-area" style="margin-top:20px;">
+        <div class="dash-grid">
+          <div class="kpi-card"><div class="kpi-title">Final Net Score</div><div class="kpi-val">${score.toFixed(2)}</div><div class="kpi-sub">+1.0 / -0.25 Logic</div></div>
+          <div class="kpi-card"><div class="kpi-title">Attempt Accuracy</div><div class="kpi-val">${accuracy}%</div><div class="kpi-sub">Precision Ratio</div></div>
+          <div class="kpi-card"><div class="kpi-title">Total Time</div><div class="kpi-val">${fmt(practiceElapsed)}</div><div class="kpi-sub">Total Duration</div></div>
+          <div class="kpi-card"><div class="kpi-title">Avg Speed</div><div class="kpi-val">${avgSpeed}s</div><div class="kpi-sub">Per Attempt</div></div>
+          <div class="kpi-card"><div class="kpi-title">Gross Points</div><div class="kpi-val" style="color:var(--ok)">+${correct.toFixed(2)}</div><div class="kpi-sub">From Correct</div></div>
+          <div class="kpi-card"><div class="kpi-title">Negative Penalty</div><div class="kpi-val" style="color:var(--bad)">-${(wrong*0.25).toFixed(2)}</div><div class="kpi-sub">From Wrong</div></div>
+          <div class="kpi-card"><div class="kpi-title">Total Attempted</div><div class="kpi-val">${attempted}</div><div class="kpi-sub">Solved Items</div></div>
+          <div class="kpi-card"><div class="kpi-title">Total Skipped</div><div class="kpi-val">${skipped}</div><div class="kpi-sub">Unsolved Items</div></div>
+        </div>
+        
+        <div class="section-title">Percentage Mastery</div>
+        <div class="kpi-card" style="padding: 20px 0; text-align: center;">
+            <canvas id="scoreGauge" width="360" height="180"></canvas>
+        </div>
+      </div>
+      
+      <div class="footer">
+        <button class="btn ghost" style="flex:1; margin-right:10px;" onclick="location.reload()">Restart Test</button>
+        <button class="btn primary" style="flex:1" onclick="review()">Review Detailed Solutions</button>
+      </div>`;
+
+    setTimeout(() => {
+        drawGauge('scoreGauge', Math.max(0, percentage));
+    }, 150);
+  }
+
+  function review(){
+    let html='';
+    results.forEach((r,i)=>{
+      const d=questions[i];
+      html += `
+        <div style="padding:15px 0; border-bottom:1px solid #eee;">
+          <div style="font-weight:800; font-size:1.1rem;">Question ${i+1}. ${d.q}</div>
+          <div style="color:${r && r.correct?'var(--ok)':'var(--bad)'}; font-weight:800; margin:5px 0;">
+            Your Pick: ${r && r.pick>=0?d.options[r.pick]:'Skipped'} ${r && r.correct?'✔️':'❌'}
+          </div>
+          <div style="font-weight:700; color:var(--muted)">Correct Answer: ${d.options[d.answer]}</div>
+        </div>`;
+    });
+    board.innerHTML = `<h2 class="heading">Solution Key</h2><div class="scroll-area">${html}</div><div class="footer"><button class="btn primary" style="width:100%" onclick="resultView()">Back to Dashboard</button></div>`;
+  }
+
+  function fmt(secs){ const m=Math.floor(secs/60), s=secs%60; return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
+
+  loginView();
+</script>
+</body>
+</html>
