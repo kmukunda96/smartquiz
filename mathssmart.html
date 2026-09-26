@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>SMART Classes - Speed Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#f6f8fc; --panel:#ffffff; --ink:#0f1a2a; --muted:#5f6b85;
+    --primary:#2e5bff; --ok:#10b981; --bad:#ef4444; 
+    --ring:#d6def4; --shadow:0 6px 20px rgba(17,24,39,.08); --r:12px;
+  }
+
+  html,body{height:100%;width:100%;margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,Arial,sans-serif;}
+  .app{display:flex;flex-direction:column;min-height:100dvh;width:100%;box-sizing:border-box; overflow-y:auto;}
+  
+  .top{height:48px;min-height:48px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 10px;box-shadow:var(--shadow); position:sticky; top:0; z-index:10;}
+  .brand{display:flex; align-items:center; font-family:'Playfair Display', serif; font-weight:700; font-size:0.9rem; color:#fff;}
+  .logo-img{height:26px; width:26px; object-fit:cover; border-radius:4px; margin-right:6px; background:#fff;}
+  
+  .meta{display:flex;gap:6px;align-items:center;font-weight:700;}
+  .pill{background:rgba(255,255,255,.2);padding:3px 8px;border-radius:12px;white-space:nowrap; font-size:0.75rem;}
+  
+  /* Anchor to flex-start so content shrinks downward instead of hiding off the top when keyboard opens */
+  .stage{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:10px 8px;box-sizing:border-box;}
+  
+  .board{width:min(460px,100%); background:var(--panel);border-radius:var(--r);box-shadow:var(--shadow);display:flex;flex-direction:column;justify-content:space-between;padding:12px;box-sizing:border-box;transition:background 0.2s ease;}
+  
+  .board.flash-green{background:#d1fae5 !important;}
+  .board.flash-red{background:#fee2e2 !important;}
+
+  .qbar{display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-weight:700; font-size:0.75rem; margin-bottom:8px;}
+  .question-container{text-align:center; padding:10px 0;}
+  .question-tag{font-size:0.7rem; color:var(--muted); font-weight:700; text-transform:uppercase; margin-bottom:2px;}
+  .question{font-size:clamp(22px, 6vw, 30px);line-height:1.2;font-weight:800;color:var(--ink);}
+  
+  .input-section{width:100%; max-width:240px; margin:0 auto; padding-bottom:5px;}
+  .input-box{width:100%; padding:10px; font-size:1.2rem; text-align:center; border:2px solid var(--ring); border-radius:var(--r); outline:none; box-sizing:border-box; font-weight:700;}
+  .input-box:focus{border-color:var(--primary);}
+
+  .btn{padding:10px;border:none;border-radius:10px;font-weight:800;cursor:pointer;user-select:none; width:100%; font-size:0.9rem; margin-top:6px;}
+  .btn.primary{background:var(--primary);color:#fff;}
+  .btn.danger{background:var(--bad);color:#fff;}
+
+  .footer{border-top:1px dashed #e6edff;padding-top:4px;margin-top:6px; text-align:center;}
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;z-index:9999;}
+  .dialog{background:#fff;border-radius:16px;padding:20px;width:min(340px,90vw); text-align:center;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="brand">
+      <img src="https://raw.githubusercontent.com/kmukunda96/smartquiz/main/SMART%20LOGO.jpg" alt="SMART Classes" class="logo-img" />
+      <span>SMART Classes</span>
+    </div>
+    <div class="meta" id="topMeta"></div>
+  </div>
+  <div class="stage"><div class="board" id="board"></div></div>
+</div>
+
+<div class="scrim" id="alertScrim">
+  <div class="dialog">
+    <h3 style="color:var(--bad); margin-top:0;">Session Terminated</h3>
+    <p id="alertReason">You exited fullscreen mode. The quiz has ended automatically.</p>
+    <button class="btn primary" onclick="location.reload()">Restart Quiz</button>
+  </div>
+</div>
+
+<script>
+  let user = "";
+  let timer = 200;
+  let timerInterval = null;
+  let currentQIndex = 0;
+  let score = 0;
+  let questions = [];
+  let quizActive = false;
+
+  const board = document.getElementById('board');
+  const topMeta = document.getElementById('topMeta');
+
+  function renderLogin() {
+    board.innerHTML = `
+      <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:10px;">
+        <img src="https://raw.githubusercontent.com/kmukunda96/smartquiz/main/SMART%20LOGO.jpg" style="height:48px; width:48px; object-fit:cover; margin-bottom:8px; border-radius:6px;" />
+        <h2 style="margin:0 0 4px 0; font-family:'Playfair Display'; font-size:1.3rem;">SMART Classes</h2>
+        <p style="color:var(--muted); font-size:0.75rem; margin-bottom:12px;">Speed Math Challenge Portal</p>
+        <div style="display:grid; gap:8px; width:100%; max-width:240px;">
+          <input id="studentName" class="input-box" style="font-size:0.9rem; padding:8px;" placeholder="Full Student Name" autofocus />
+          <button class="btn primary" onclick="startFullscreenPrompt()">Start Challenge</button>
+        </div>
+      </div>`;
+    topMeta.innerHTML = `<span class="pill">Portal</span>`;
+  }
+
+  function startFullscreenPrompt() {
+    const nameInput = document.getElementById('studentName').value.trim();
+    if(!nameInput) { alert("Please enter your name."); return; }
+    user = nameInput;
+
+    const el = document.documentElement;
+    if(el.requestFullscreen) {
+      el.requestFullscreen().catch(err => alert("Fullscreen permission is required."));
+    } else if(el.webkitRequestFullscreen) {
+      el.webkitRequestFullscreen();
+    }
+    
+    setTimeout(initQuiz, 400);
+  }
+
+  function generateQuestions() {
+    let qList = [];
+    for(let i=0; i<30; i++) {
+      let topic = Math.floor(Math.random() * 5) + 1;
+      let num1, num2, ans, desc;
+
+      if(topic === 1) {
+        num1 = Math.floor(Math.random() * 11) + 10; 
+        num2 = Math.floor(Math.random() * 11) + 10;
+        ans = num1 * num2;
+        desc = `Multiply (10 to 20)`;
+      } else if(topic === 2) {
+        num1 = Math.floor(Math.random() * 11) + 20; 
+        num2 = Math.floor(Math.random() * 11) + 20;
+        ans = num1 * num2;
+        desc = `Multiply (20 to 30)`;
+      } else if(topic === 3) {
+        num1 = Math.floor(Math.random() * 90) + 10; 
+        num2 = 99;
+        ans = num1 * num2;
+        desc = `Multiply with 99`;
+      } else if(topic === 4) {
+        num1 = Math.floor(Math.random() * 90) + 10; 
+        num2 = 11;
+        ans = num1 * num2;
+        desc = `Multiply with 11`;
+      } else {
+        num1 = Math.floor(Math.random() * 90) + 10;
+        num2 = num1;
+        ans = num1 * num1;
+        desc = `Square of 2-Digit`;
+      }
+      qList.push({ text: `${num1} × ${num2}`, ans: ans, type: desc });
+    }
+    return qList;
+  }
+
+  function initQuiz() {
+    if(!document.fullscreenElement) {
+      alert("Please allow Fullscreen mode to begin the test.");
+      return;
+    }
+    questions = generateQuestions();
+    quizActive = true;
+    currentQIndex = 0;
+    score = 0;
+    timer = 200;
+
+    timerInterval = setInterval(() => {
+      timer--;
+      updateTimerDisplay();
+      if(timer <= 0) {
+        clearInterval(timerInterval);
+        endQuiz("Time's up!");
+      }
+    }, 1000);
+
+    renderQuestion();
+  }
+
+  function updateTimerDisplay() {
+    const timePill = document.getElementById('timerPill');
+    if(timePill) timePill.textContent = `${timer}s`;
+  }
+
+  function renderQuestion() {
+    if(currentQIndex >= questions.length) {
+      endQuiz("Completed all questions!");
+      return;
+    }
+
+    const q = questions[currentQIndex];
+    board.className = "board";
+    board.innerHTML = `
+      <div class="qbar">
+        <div>Q: ${currentQIndex + 1}/${questions.length}</div>
+        <div class="pill" id="timerPill" style="background:#eef2ff; color:var(--primary);">200s</div>
+      </div>
+      <div class="question-container">
+        <div class="question-tag">${q.type}</div>
+        <div class="question">${q.text} = ?</div>
+      </div>
+      <div class="input-section">
+        <input id="ansInput" class="input-box" type="number" pattern="[0-9]*" placeholder="Answer" autofocus />
+        <button class="btn primary" onclick="submitAnswer()">Submit</button>
+      </div>
+      <div class="footer">
+        <button class="btn danger" style="padding:4px; font-size:0.7rem; width:auto; background:none; color:var(--bad);" onclick="endQuiz('Test aborted by user.')">Quit Test</button>
+      </div>`;
+    
+    updateTimerDisplay();
+    
+    const inputField = document.getElementById('ansInput');
+    inputField.focus();
+    inputField.addEventListener("keypress", function(event) {
+      if (event.key === "Enter") {
+        submitAnswer();
+      }
+    });
+    
+    topMeta.innerHTML = `
+      <img src="https://raw.githubusercontent.com/kmukunda96/smartquiz/main/SMART%20LOGO.jpg" alt="Logo" style="height:20px; width:20px; object-fit:cover; border-radius:3px; background:#fff;" />
+      <span class="pill">${user}</span>`;
+  }
+
+  function submitAnswer() {
+    const inputField = document.getElementById('ansInput');
+    const val = inputField.value.trim();
+    if(val === "") return;
+
+    const isCorrect = parseInt(val, 10) === questions[currentQIndex].ans;
+    if(isCorrect) {
+      score++;
+      board.classList.add('flash-green');
+    } else {
+      board.classList.add('flash-red');
+    }
+
+    setTimeout(() => {
+      currentQIndex++;
+      renderQuestion();
+    }, 300);
+  }
+
+  function endQuiz(reason) {
+    quizActive = false;
+    clearInterval(timerInterval);
+    if(document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+
+    board.className = "board";
+    board.innerHTML = `
+      <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:10px;">
+        <h2 style="font-family:'Playfair Display'; font-size:1.4rem; margin:0;">Scorecard</h2>
+        <h3 style="color:var(--muted); margin:4px 0 10px 0; font-size:0.85rem;">${user}</h3>
+        
+        <div style="background:#f3f6ff; padding:10px; border-radius:10px; width:100%; max-width:220px; margin-bottom:10px;">
+          <div style="font-size:0.7rem; color:var(--muted); font-weight:700;">Correct Answers</div>
+          <div style="font-size:1.6rem; font-weight:800; color:var(--primary);">${score} / ${currentQIndex}</div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-top:2px;">${reason}</div>
+        </div>
+
+        <button class="btn primary" style="max-width:220px;" onclick="location.reload()">Restart Quiz</button>
+      </div>`;
+    topMeta.innerHTML = `<span class="pill">${user}</span>`;
+  }
+
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement && quizActive) {
+      quizActive = false;
+      clearInterval(timerInterval);
+      document.getElementById('alertScrim').style.display = 'flex';
+    }
+  });
+
+  renderLogin();
+</script>
+</body>
+</html>
